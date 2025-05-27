@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp } from 'lucide-react';
-import BBA_LOGO from '../img/bba_logoa.png'; // Adjust the path as necessary
+import BBA_LOGO from '../img/as.png'; // Adjust the path as necessary
 
 const defaultDriverData = {
   "Adisu J": { dailyRate: 250, hourlyRate: 25, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
@@ -193,9 +193,9 @@ const DriverPayCalculator = () => {
         {/* Header */}
         <div className="text-center mb-6">
           {/* <div className="mb-6"> */}
-            <div className="text-2xl font-bold mb-4 text-white "> BBA Pay Calculator</div>
             <div className="flex justify-center ">
-              <img src={BBA_LOGO} alt="BBA Logo" className="w-60 h-30 rounded-full mb-6 " />  </div>
+              <img src={BBA_LOGO} alt="BBA Logo" className="w-60 h-30 rounded-full " />  </div>
+            <div className="text-3xl font-bold mb-4 text-white ">  BBA Payroll Calculator</div>
             {/* <div className="text-white text-xl ">Calculate and manage driver payments effortlessly</div> */}
           {/* </div> */}
         </div>
