@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/driver-pay-calculator/static/css/main.233b3b67.css",
+    "main.js": "/driver-pay-calculator/static/js/main.741a7cf1.js",
+    "static/media/as.png": "/driver-pay-calculator/static/media/as.bed89ee9cb21d1443720.png",
+    "index.html": "/driver-pay-calculator/index.html",
+    "main.233b3b67.css.map": "/driver-pay-calculator/static/css/main.233b3b67.css.map",
+    "main.741a7cf1.js.map": "/driver-pay-calculator/static/js/main.741a7cf1.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.233b3b67.css",
+    "static/js/main.741a7cf1.js"
+  ]
+}
