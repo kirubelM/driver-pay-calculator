@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp } from 'lucide-react';
+import BBA_LOGO from '../img/bba_logoa.png'; // Adjust the path as necessary
 
 const defaultDriverData = {
   "Adisu J": { dailyRate: 250, hourlyRate: 25, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
@@ -30,7 +31,7 @@ const DriverPayCalculator = () => {
     const saved = localStorage.getItem('driverPayData');
     return saved ? JSON.parse(saved) : defaultDriverData;
   });
-  
+
   const [showSettings, setShowSettings] = useState(false);
   const [payResults, setPayResults] = useState([]);
   const [totalPay, setTotalPay] = useState(0);
@@ -46,7 +47,7 @@ const DriverPayCalculator = () => {
     const dailyPay = daysWorked * dailyRate;
     const regularPay = hourlyPay + dailyPay;
     const totalPay = regularPay + expense1099;
-    
+
     return { hourlyPay, dailyPay, regularPay, totalPay, expense1099 };
   };
 
@@ -72,14 +73,14 @@ const DriverPayCalculator = () => {
 
   const calculateAllDrivers = () => {
     setIsCalculating(true);
-    
+
     setTimeout(() => {
       let totalPayAll = 0;
       const results = [];
 
       Object.entries(driverData).forEach(([driverName, data]) => {
         const { hoursWorked, daysWorked, expense1099, dailyRate, hourlyRate, comments } = data;
-        
+
         if (hoursWorked < 0 || daysWorked < 0 || expense1099 < 0) return;
 
         const payData = calculatePay(hoursWorked, hourlyRate, daysWorked, dailyRate, expense1099);
@@ -190,13 +191,13 @@ const DriverPayCalculator = () => {
 
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
-            <Calculator className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-5xl font-bold text-white mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            BBA Pay Calculator
-          </h1>
+        <div className="text-center mb-6">
+          {/* <div className="mb-6"> */}
+            <div className="text-2xl font-bold mb-4 text-white "> BBA Pay Calculator</div>
+            <div className="flex justify-center ">
+              <img src={BBA_LOGO} alt="BBA Logo" className="w-60 h-30 rounded-full mb-6 " />  </div>
+            {/* <div className="text-white text-xl ">Calculate and manage driver payments effortlessly</div> */}
+          {/* </div> */}
         </div>
 
         {/* Controls */}
@@ -208,7 +209,7 @@ const DriverPayCalculator = () => {
             <Settings className="w-5 h-5 mr-2" />
             Rate Settings
           </button>
-          
+
           <button
             onClick={calculateAllDrivers}
             disabled={isCalculating}
@@ -221,7 +222,7 @@ const DriverPayCalculator = () => {
             )}
             {isCalculating ? 'Calculating...' : 'Calculate Pay'}
           </button>
-          
+
           <button
             onClick={exportData}
             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-500 hover:to-teal-500 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
@@ -240,7 +241,7 @@ const DriverPayCalculator = () => {
               className="hidden"
             />
           </label>
-          
+
           <button
             onClick={resetToDefaults}
             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:from-red-500 hover:to-pink-500 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
@@ -293,7 +294,7 @@ const DriverPayCalculator = () => {
             <Users className="w-6 h-6 text-purple-400 mr-3" />
             <h2 className="text-2xl font-bold text-white">Driver Work Details</h2>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -375,25 +376,7 @@ const DriverPayCalculator = () => {
         {/* Results */}
         {payResults.length > 0 && (
           <div className="space-y-8">
-            {/* Total Summary */}
-            <div className="bg-gradient-to-r from-green-600/20 to-blue-600/20 backdrop-blur-lg rounded-2xl p-8 border border-green-500/30 shadow-2xl">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full mb-4">
-                  <TrendingUp className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-3xl font-bold text-white mb-2">Total Payroll</h2>
-                <p className="text-5xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
-                  ${totalPay.toFixed(2)}
-                </p>
-                <button
-                  onClick={exportToCSV}
-                  className="mt-6 inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-500 hover:to-blue-500 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-                >
-                  <Download className="w-5 h-5 mr-2" />
-                  Export to CSV
-                </button>
-              </div>
-            </div>
+           
 
             {/* Individual Results */}
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
@@ -401,7 +384,7 @@ const DriverPayCalculator = () => {
                 <FileText className="w-6 h-6 mr-3 text-blue-400" />
                 Pay Breakdown
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {payResults.map((result) => (
                   <div key={result.name} className="bg-white/5 rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105">
@@ -411,7 +394,7 @@ const DriverPayCalculator = () => {
                         ${result.totalPay.toFixed(2)}
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between text-gray-300">
                         <span>Daily Pay:</span>
@@ -434,8 +417,8 @@ const DriverPayCalculator = () => {
                       {result.comments && result.comments !== "-" && (
                         <div className="text-xs text-black-400 mt-3 p-2 bg-white rounded">
                           <b>Notes:</b>            <div className="flex justify-between font-semibold text-white">
-                          <span>${result.regularPay.toFixed(2)}</span>
-                        </div> {result.comments}
+                            <span>${result.regularPay.toFixed(2)}</span>
+                          </div> {result.comments}
                         </div>
                       )}
                     </div>
@@ -443,6 +426,25 @@ const DriverPayCalculator = () => {
                 ))}
               </div>
             </div>
+             {/* Total Summary */}
+            {/* <div className="bg-gradient-to-r from-green-600/20 to-blue-600/20 backdrop-blur-lg rounded-2xl p-8 border border-green-500/30 shadow-2xl">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full mb-4">
+                  <TrendingUp className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-2">Total Payroll</h2>
+                <p className="text-5xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+                  ${totalPay.toFixed(2)}
+                </p>
+                <button
+                  onClick={exportToCSV}
+                  className="mt-6 inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-500 hover:to-blue-500 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Export to CSV
+                </button>
+              </div>
+            </div> */}
           </div>
         )}
       </div>
