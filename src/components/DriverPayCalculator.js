@@ -41,24 +41,19 @@ const defaultDriverData = {
 };
 
 const DriverPayCalculator = () => {
-    const [driverData, setDriverData] = useState({}); // Initialize as empty, will load from Firebase
+    const [driverData, setDriverData] = useState({});
     const [showSettings, setShowSettings] = useState(false);
     const [payResults, setPayResults] = useState([]);
     const [totalPay, setTotalPay] = useState(0);
     const [isCalculating, setIsCalculating] = useState(false);
-    const [isLoading, setIsLoading] = useState(true); // State for initial data load and fetching archived lists
+    const [isLoading, setIsLoading] = useState(true);
 
-    // NEW STATES FOR LOOKBACK FEATURE
-    const [archivedWeeks, setArchivedWeeks] = useState([]); // Stores list of { id: '...', archiveDate: '...' }
-    const [selectedArchiveId, setSelectedArchiveId] = useState(''); // Stores the ID of the currently selected archive
-    const [weeklyNotes, setWeeklyNotes] = useState(""); // State for current week's overall notes
-    // State to hold comprehensive details of the currently loaded archived payroll
+    const [archivedWeeks, setArchivedWeeks] = useState([]);
+    const [selectedArchiveId, setSelectedArchiveId] = useState('');
+    const [weeklyNotes, setWeeklyNotes] = useState("");
     const [loadedArchiveDetails, setLoadedArchiveDetails] = useState(null);
 
-    // --- IMPORTANT FIX: Move useCallback definitions here, BEFORE they are used in useEffect ---
-
     // Function to save current driver data to Firebase (overwrites 'currentData')
-    // This is now primarily called by calculateAllDrivers and archiveCurrentPayroll
     const saveCurrentDataToFirebase = useCallback(async (dataToSave, currentPayResults, currentTotalPay) => {
         try {
             const docRef = doc(db, "payroll", "currentData");
@@ -69,30 +64,28 @@ const DriverPayCalculator = () => {
                 lastSaved: new Date().toISOString()
             });
             console.log("Current driver data saved to Firebase.");
+            return true; // Indicate success
         } catch (error) {
             console.error("Error saving current data to Firebase:", error);
             alert("Failed to save current data.");
+            return false; // Indicate failure
         }
     }, []);
 
     // Function to fetch the list of all archived payroll weeks
     const fetchArchivedWeeksList = useCallback(async () => {
-        setIsLoading(true); // Indicate fetching lists
+        setIsLoading(true);
         try {
-            // Order by archiveTimestamp descending to show most recent first
             const q = query(collection(db, "payrollHistory"), orderBy("archiveTimestamp", "desc"));
             const querySnapshot = await getDocs(q);
             const weeks = querySnapshot.docs.map(doc => ({
                 id: doc.id,
-                // Display relevant dates for selection
                 displayDate: doc.data().periodStartDate && doc.data().periodEndDate
                     ? `${doc.data().periodStartDate} to ${doc.data().periodEndDate}`
                     : (doc.data().archiveTimestamp ? `Archived: ${new Date(doc.data().archiveTimestamp).toLocaleDateString()}` : 'N/A Date'),
-                // Store actual archiveTimestamp for sorting and future reference
                 archiveTimestamp: doc.data().archiveTimestamp
             }));
             setArchivedWeeks(weeks);
-            // Optionally, pre-select the most recent one if any exist
             if (weeks.length > 0 && !selectedArchiveId) {
                 setSelectedArchiveId(weeks[0].id);
             }
@@ -103,7 +96,7 @@ const DriverPayCalculator = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [selectedArchiveId]); // selectedArchiveId as dependency for pre-selection logic
+    }, [selectedArchiveId]);
 
     // Function to load a selected archived payroll data
     const loadSelectedArchive = useCallback(async () => {
@@ -112,7 +105,7 @@ const DriverPayCalculator = () => {
             return;
         }
 
-        setIsLoading(true); // Indicate loading data
+        setIsLoading(true);
         try {
             const docRef = doc(db, "payrollHistory", selectedArchiveId);
             const docSnap = await getDoc(docRef);
@@ -123,26 +116,23 @@ const DriverPayCalculator = () => {
                 setPayResults(data.payResults || []);
                 setTotalPay(data.totalPay || 0);
                 setWeeklyNotes(""); // Clear current weekly notes when loading an archive
-                // Store all the archive's metadata in loadedArchiveDetails state
                 setLoadedArchiveDetails({
                     periodStartDate: data.periodStartDate,
                     periodEndDate: data.periodEndDate,
                     archiveTimestamp: data.archiveTimestamp,
                     numberOfDrivers: data.numberOfDrivers,
                     totalDailyPay: data.totalDailyPay,
-                    totalHourlyPay: data.totalHourlyPay, // Corrected from data.hourlyPay
+                    totalHourlyPay: data.totalHourlyPay,
                     totalRegularPay: data.totalRegularPay,
                     total1099Expense: data.total1099Expense,
                     weeklyNotes: data.weeklyNotes || "No specific notes for this archived week.",
-                    // archivedByUserId: data.archivedByUserId, // Uncomment if using auth
-                    // archivedByUserEmail: data.archivedByUserEmail, // Uncomment if using auth
                 });
                 alert(`Payroll data for "${selectedArchiveId}" loaded! You can now review it.`);
                 console.log("Archived data loaded:", data);
             } else {
                 alert("The selected archived payroll was not found.");
                 console.log(`No archived document found with ID: ${selectedArchiveId}`);
-                setLoadedArchiveDetails(null); // Clear if not found
+                setLoadedArchiveDetails(null);
             }
         } catch (error) {
             console.error("Error loading archived data:", error);
@@ -187,11 +177,11 @@ const DriverPayCalculator = () => {
         }));
     };
 
-    // Updated calculateAllDrivers to also save data after calculation
-    const calculateAllDrivers = useCallback(() => {
+    // Calculate all drivers' pay and save to Firebase, only when called explicitly
+    const calculateAndSaveCurrentPayroll = useCallback(async () => {
         setIsCalculating(true);
 
-        setTimeout(async () => { // Made async to await saveCurrentDataToFirebase
+        setTimeout(async () => {
             let totalPayAll = 0;
             const results = [];
 
@@ -205,7 +195,6 @@ const DriverPayCalculator = () => {
                 const parsedHourlyRate = parseFloat(hourlyRate) || 0;
 
                 if (parsedHoursWorked < 0 || parsedDaysWorked < 0 || parsedExpense1099 < 0) {
-                    // Consider adding a visual warning here
                     console.warn(`Negative values found for ${driverName}, skipping calculation for this driver.`);
                     return;
                 }
@@ -238,24 +227,24 @@ const DriverPayCalculator = () => {
             setTotalPay(totalPayAll);
             setIsCalculating(false);
 
-            // Automatically save the current calculated data to Firebase
-            await saveCurrentDataToFirebase(driverData, results, totalPayAll);
-            alert("Payroll calculated and current data saved automatically!");
+            // Save the current calculated data to Firebase
+            const saveSuccess = await saveCurrentDataToFirebase(driverData, results, totalPayAll);
+            if (saveSuccess) {
+                alert("Payroll calculated and current data saved!");
+            }
 
-        }, 800); // Small delay for visual feedback
-    }, [driverData, saveCurrentDataToFirebase]); // Dependencies for useCallback
+        }, 800);
+    }, [driverData, saveCurrentDataToFirebase]); // Dependencies for useCallback are correct
 
-    const resetToDefaults = async () => { // Made async to await Firebase calls
+    const resetToDefaults = async () => {
         if (window.confirm("Are you sure you want to reset all data to defaults? This will also clear the current data from Firebase.")) {
-            // Reset local state first
             setDriverData(defaultDriverData);
             setPayResults([]);
             setTotalPay(0);
-            setWeeklyNotes(""); // Clear weekly notes
-            setLoadedArchiveDetails(null); // Clear loaded archive details
-            localStorage.removeItem('driverPayData'); // Clear local storage (if still used)
+            setWeeklyNotes("");
+            setLoadedArchiveDetails(null);
+            localStorage.removeItem('driverPayData');
 
-            // Clear data from Firebase 'currentData' document
             try {
                 const docRef = doc(db, "payroll", "currentData");
                 await setDoc(docRef, { driverData: defaultDriverData, payResults: [], totalPay: 0, lastSaved: new Date().toISOString() });
@@ -273,7 +262,7 @@ const DriverPayCalculator = () => {
 
         const csvContent = [
             ['Driver', 'Days Worked', 'Daily Rate', 'Daily Pay', 'Hours Worked', 'Hourly Rate', 'Hourly Pay', '1099 Expense', 'Regular Pay', 'Total Pay', 'Comments'],
-            ...payResults.map(result => [
+            ...payResults.sort((a, b) => a.name.localeCompare(b.name)).map(result => [ // Sorted for CSV export
                 result.name,
                 result.daysWorked ?? 0,
                 result.dailyRate ?? 0,
@@ -302,7 +291,7 @@ const DriverPayCalculator = () => {
             driverData,
             payResults,
             totalPay,
-            weeklyNotes, // Include current weekly notes in the export
+            weeklyNotes,
             exportDate: new Date().toISOString()
         };
 
@@ -320,23 +309,24 @@ const DriverPayCalculator = () => {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = async (e) => { // Made async to save imported data to Firebase
+        reader.onload = async (e) => {
             try {
                 const importedData = JSON.parse(e.target.result);
                 if (importedData.driverData) {
                     setDriverData(importedData.driverData);
                     setPayResults(importedData.payResults || []);
                     setTotalPay(importedData.totalPay || 0);
-                    setWeeklyNotes(importedData.weeklyNotes || ""); // Import weekly notes
-                    setLoadedArchiveDetails(null); // Clear loaded archive details
+                    setWeeklyNotes(importedData.weeklyNotes || "");
+                    setLoadedArchiveDetails(null);
 
-                    // Save imported data to Firebase as current data
-                    await saveCurrentDataToFirebase(
+                    const saveSuccess = await saveCurrentDataToFirebase(
                         importedData.driverData,
                         importedData.payResults || [],
                         importedData.totalPay || 0
                     );
-                    alert("Data imported successfully and saved to Firebase as current data!");
+                    if (saveSuccess) {
+                        alert("Data imported successfully and saved to Firebase as current data!");
+                    }
                 } else {
                     alert('Invalid file format: Missing driverData.');
                 }
@@ -348,69 +338,80 @@ const DriverPayCalculator = () => {
         reader.readAsText(file);
     };
 
-    // --- NEW: ARCHIVING AND LOOKBACK FUNCTIONS ---
-
-    // Function to archive the current payroll data
     const archiveCurrentPayroll = useCallback(async () => {
         if (!window.confirm("Are you sure you want to finalize and archive the current payroll? This will save a snapshot and clear the current work area for the next week.")) {
             return;
         }
 
-        setIsCalculating(true); // Indicate archiving in progress
+        setIsCalculating(true);
 
         try {
-            // --- 1. Calculate Date Information for the Archive ---
-            const today = new Date(); // The date archiving is performed
-            const archiveTimestamp = today.toISOString(); // e.g., "2025-06-20T18:15:57.000Z"
+            // Recalculate just before archiving to ensure the latest data is used
+            let currentTotalPay = 0;
+            const currentPayResults = [];
+            let totalDailyPay = 0;
+            let totalHourlyPay = 0;
+            let totalRegularPayCalculated = 0;
+            let total1099Expense = 0;
 
-            // --- Define your payroll week logic carefully here ---
-            // Example: If your payroll week ALWAYS ends on a Sunday (day 0), and you archive on Monday.
-            // Adjust this logic to fit your specific business rules.
+            Object.entries(driverData).forEach(([driverName, data]) => {
+                const { hoursWorked, daysWorked, expense1099, dailyRate, hourlyRate, comments } = data;
+                const payData = calculatePay(
+                    parseFloat(hoursWorked) || 0,
+                    parseFloat(hourlyRate) || 0,
+                    parseFloat(daysWorked) || 0,
+                    parseFloat(dailyRate) || 0,
+                    parseFloat(expense1099) || 0
+                );
+                currentTotalPay += payData.totalPay;
+                totalDailyPay += payData.dailyPay;
+                totalHourlyPay += payData.hourlyPay;
+                totalRegularPayCalculated += payData.regularPay;
+                total1099Expense += payData.expense1099;
+
+                currentPayResults.push({
+                    name: driverName,
+                    hourlyPay: payData.hourlyPay || 0,
+                    dailyPay: payData.dailyPay || 0,
+                    regularPay: payData.regularPay || 0,
+                    totalPay: payData.totalPay || 0,
+                    expense1099: payData.expense1099 || 0,
+                    daysWorked: parseFloat(daysWorked) || 0,
+                    hoursWorked: parseFloat(hoursWorked) || 0,
+                    dailyRate: parseFloat(dailyRate) || 0,
+                    hourlyRate: parseFloat(hourlyRate) || 0,
+                    comments: comments || "-"
+                });
+            });
+
+            // Set state for current session for display
+            setPayResults(currentPayResults);
+            setTotalPay(currentTotalPay);
+
+            const today = new Date();
+            const archiveTimestamp = today.toISOString();
+
             const periodEndDate = new Date(today);
-            const currentDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-
-            // If today is Sunday, it's the end of the week. Otherwise, find the next Sunday.
-            if (currentDayOfWeek !== 0) { // If not Sunday
-                periodEndDate.setDate(today.getDate() + (7 - currentDayOfWeek));
+            const currentDayOfWeek = today.getDay();
+            if (currentDayOfWeek !== 0) {
+                periodEndDate.setDate(periodEndDate.getDate() + (7 - currentDayOfWeek)); // Adjust to next Sunday if not Sunday
             }
-            // If today is Sunday, periodEndDate is already today.
-
-            const periodEndDateISO = periodEndDate.toISOString().split('T')[0]; // "YYYY-MM-DD"
+            const periodEndDateISO = periodEndDate.toISOString().split('T')[0];
 
             const periodStartDate = new Date(periodEndDate);
-            periodStartDate.setDate(periodEndDate.getDate() - 6); // Go back 6 days to get Monday (assuming 7-day week)
-            const periodStartDateISO = periodStartDate.toISOString().split('T')[0]; // "YYYY-MM-DD"
+            periodStartDate.setDate(periodEndDate.getDate() - 6);
+            const periodStartDateISO = periodStartDate.toISOString().split('T')[0];
 
-            // Construct a descriptive ID for the archive document
             const payrollWeekId = `payroll_${periodStartDateISO}_to_${periodEndDateISO}`;
 
-            // --- 2. Calculate Summary Statistics from current payResults ---
-            const totalDailyPay = payResults.reduce((sum, result) => sum + (result.dailyPay || 0), 0);
-            const totalHourlyPay = payResults.reduce((sum, result) => sum + (result.hourlyPay || 0), 0);
-            const totalRegularPayCalculated = payResults.reduce((sum, result) => sum + (result.regularPay || 0), 0);
-            const total1099Expense = payResults.reduce((sum, result) => sum + (result.expense1099 || 0), 0);
             const numberOfDrivers = Object.keys(driverData).length;
 
-            // --- 3. (Optional) Get User Information if using Firebase Auth ---
-            // import { getAuth } from 'firebase/auth'; // Uncomment this import at the top
-            // const auth = getAuth();
-            // const currentUser = auth.currentUser;
-            // let archivedByUserId = null;
-            // let archivedByUserEmail = null;
-            // if (currentUser) {
-            //     archivedByUserId = currentUser.uid;
-            //     archivedByUserEmail = currentUser.email;
-            // }
-
-            // 4. Reference the new document in the 'payrollHistory' collection
             const historyDocRef = doc(db, "payrollHistory", payrollWeekId);
 
-            // 5. Save the current state AND new details to the history collection
             await setDoc(historyDocRef, {
-                driverData: driverData,
-                payResults: payResults,
-                totalPay: totalPay, // Overall total from current state
-                // New detailed fields:
+                driverData: driverData, // Use the current driverData state
+                payResults: currentPayResults, // Use the just calculated pay results
+                totalPay: currentTotalPay, // Use the just calculated total pay
                 periodStartDate: periodStartDateISO,
                 periodEndDate: periodEndDateISO,
                 archiveTimestamp: archiveTimestamp,
@@ -419,24 +420,21 @@ const DriverPayCalculator = () => {
                 totalHourlyPay: totalHourlyPay,
                 totalRegularPay: totalRegularPayCalculated,
                 total1099Expense: total1099Expense,
-                weeklyNotes: weeklyNotes, // Include the current weekly notes
-                // archivedByUserId: archivedByUserId, // Uncomment if using auth
-                // archivedByUserEmail: archivedByUserEmail, // Uncomment if using auth
+                weeklyNotes: weeklyNotes,
             });
 
             console.log(`Current payroll archived as: ${payrollWeekId}`);
             alert(`Payroll successfully archived for period ${periodStartDateISO} - ${periodEndDateISO}!`);
 
-            // 6. Reset the "currentData" document in Firebase and in local state
-            await saveCurrentDataToFirebase(defaultDriverData, [], 0); // Save default values to currentData
+            // Reset the "currentData" document in Firebase and in local state
+            await saveCurrentDataToFirebase(defaultDriverData, [], 0);
             setDriverData(defaultDriverData);
             setPayResults([]);
             setTotalPay(0);
-            setWeeklyNotes(""); // Clear weekly notes for the new period
-            setLoadedArchiveDetails(null); // Clear loaded archive details after archiving
+            setWeeklyNotes("");
+            setLoadedArchiveDetails(null);
             console.log("Current payroll data reset for next period.");
 
-            // 7. Refresh the list of archived weeks so the new one appears in the dropdown
             await fetchArchivedWeeksList();
 
         } catch (error) {
@@ -445,10 +443,8 @@ const DriverPayCalculator = () => {
         } finally {
             setIsCalculating(false);
         }
-    }, [driverData, payResults, totalPay, weeklyNotes, saveCurrentDataToFirebase, fetchArchivedWeeksList]);
+    }, [driverData, weeklyNotes, saveCurrentDataToFirebase, fetchArchivedWeeksList]);
 
-
-    // --- END NEW FUNCTIONS ---
 
     // Initial data load for 'currentData' on component mount
     useEffect(() => {
@@ -463,12 +459,9 @@ const DriverPayCalculator = () => {
                     setDriverData(data.driverData || defaultDriverData);
                     setPayResults(data.payResults || []);
                     setTotalPay(data.totalPay || 0);
-                    // You might want to load weeklyNotes from 'currentData' if you ever saved it there
-                    // For now, assume weeklyNotes only stored in archive.
-                    setWeeklyNotes(""); // Ensure current weekly notes are clear on fresh load
+                    setWeeklyNotes("");
                     console.log("Current driver data loaded from Firebase.");
                 } else {
-                    // If no 'currentData' exists, initialize with defaults and save it
                     console.log("No 'currentData' found, initializing with defaults and saving.");
                     await saveCurrentDataToFirebase(defaultDriverData, [], 0);
                     setDriverData(defaultDriverData);
@@ -478,7 +471,7 @@ const DriverPayCalculator = () => {
             } catch (error) {
                 console.error("Error loading initial current data:", error);
                 alert("Failed to load initial data. Using default data. Please check console.");
-                setDriverData(defaultDriverData); // Fallback to default on error
+                setDriverData(defaultDriverData);
                 setPayResults([]);
                 setTotalPay(0);
             } finally {
@@ -487,18 +480,17 @@ const DriverPayCalculator = () => {
         };
 
         loadInitialData();
-        fetchArchivedWeeksList(); // Also fetch archived weeks list on initial load
+        fetchArchivedWeeksList();
     }, [saveCurrentDataToFirebase, fetchArchivedWeeksList]);
 
 
-    // Re-calculate pay whenever driverData changes (and thus trigger a save of current data)
+    // NEW useEffect: Clear payResults and totalPay when driverData changes
     useEffect(() => {
-        // Only calculate if driverData is not empty (i.e., after initial load or reset)
-        if (Object.keys(driverData).length > 0) {
-            calculateAllDrivers(); // This will also trigger a save of current data
-        }
-    }, [driverData, calculateAllDrivers]);
-
+        // This effect runs whenever driverData state object changes.
+        // It visually resets the calculation results, indicating they are stale.
+        setPayResults([]);
+        setTotalPay(0);
+    }, [driverData]); // Dependency on driverData
 
     if (isLoading) {
         return (
@@ -508,6 +500,12 @@ const DriverPayCalculator = () => {
             </div>
         );
     }
+
+    // Helper function to get sorted driver names
+    const getSortedDriverNames = () => {
+        return Object.keys(driverData).sort((a, b) => a.localeCompare(b));
+    };
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-900">
@@ -539,9 +537,9 @@ const DriverPayCalculator = () => {
                         Rate Settings
                     </button>
 
-                    {/* Calculate Pay button now also saves current data */}
+                    {/* Calculate Pay button now only calculates and saves when clicked */}
                     <button
-                        onClick={calculateAllDrivers}
+                        onClick={calculateAndSaveCurrentPayroll}
                         disabled={isCalculating}
                         className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-lg hover:from-blue-500 hover:to-purple-500 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -556,7 +554,7 @@ const DriverPayCalculator = () => {
                     {/* Finalize & Archive Payroll Button */}
                     <button
                         onClick={archiveCurrentPayroll}
-                        disabled={isCalculating || payResults.length === 0} // Disable if no results calculated
+                        disabled={isCalculating || payResults.length === 0}
                         className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-500 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Save className="w-5 h-5 mr-2" />
@@ -607,31 +605,34 @@ const DriverPayCalculator = () => {
                             <h2 className="text-2xl font-bold text-white">Driver Rate Settings</h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {Object.entries(driverData).map(([driverName, data]) => (
-                                <div key={driverName} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                                    <h3 className="text-lg font-semibold text-white mb-3">{driverName}</h3>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <label className="block text-sm text-gray-300 mb-1">Daily Rate ($)</label>
-                                            <input
-                                                type="number"
-                                                value={data.dailyRate}
-                                                onChange={(e) => handleRateChange(driverName, 'dailyRate', e.target.value)}
-                                                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm text-gray-300 mb-1">Hourly Rate ($)</label>
-                                            <input
-                                                type="number"
-                                                value={data.hourlyRate}
-                                                onChange={(e) => handleRateChange(driverName, 'hourlyRate', e.target.value)}
-                                                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
+                            {getSortedDriverNames().map((driverName) => {
+                                const data = driverData[driverName];
+                                return (
+                                    <div key={driverName} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
+                                        <h3 className="text-lg font-semibold text-white mb-3">{driverName}</h3>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-sm text-gray-300 mb-1">Daily Rate ($)</label>
+                                                <input
+                                                    type="number"
+                                                    value={data.dailyRate}
+                                                    onChange={(e) => handleRateChange(driverName, 'dailyRate', e.target.value)}
+                                                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm text-gray-300 mb-1">Hourly Rate ($)</label>
+                                                <input
+                                                    type="number"
+                                                    value={data.hourlyRate}
+                                                    onChange={(e) => handleRateChange(driverName, 'hourlyRate', e.target.value)}
+                                                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
@@ -690,54 +691,57 @@ const DriverPayCalculator = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {Object.entries(driverData).map(([driverName, data]) => (
-                                    <tr key={driverName} className="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
-                                        <td className="py-3 px-4 font-medium text-white">{driverName}</td>
-                                        <td className="py-3 px-4">
-                                            <input
-                                                type="number"
-                                                value={data.daysWorked}
-                                                onChange={(e) => handleDriverDataChange(driverName, 'daysWorked', parseFloat(e.target.value) || 0)}
-                                                className="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                min="0"
-                                            />
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <input
-                                                type="number"
-                                                value={data.hoursWorked}
-                                                onChange={(e) => handleDriverDataChange(driverName, 'hoursWorked', parseFloat(e.target.value) || 0)}
-                                                className="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                min="0"
-                                            />
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <input
-                                                type="number"
-                                                value={data.expense1099}
-                                                onChange={(e) => handleDriverDataChange(driverName, 'expense1099', parseFloat(e.target.value) || 0)}
-                                                className="w-28 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                min="0"
-                                            />
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <input
-                                                type="text"
-                                                value={data.comments}
-                                                onChange={(e) => handleDriverDataChange(driverName, 'comments', e.target.value)}
-                                                className="w-40 px-2 py-1 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                placeholder="Notes..."
-                                            />
-                                        </td>
-                                    </tr>
-                                ))}
+                                {getSortedDriverNames().map((driverName) => {
+                                    const data = driverData[driverName];
+                                    return (
+                                        <tr key={driverName} className="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
+                                            <td className="py-3 px-4 font-medium text-white">{driverName}</td>
+                                            <td className="py-3 px-4">
+                                                <input
+                                                    type="number"
+                                                    value={data.daysWorked}
+                                                    onChange={(e) => handleDriverDataChange(driverName, 'daysWorked', parseFloat(e.target.value) || 0)}
+                                                    className="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    min="0"
+                                                />
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <input
+                                                    type="number"
+                                                    value={data.hoursWorked}
+                                                    onChange={(e) => handleDriverDataChange(driverName, 'hoursWorked', parseFloat(e.target.value) || 0)}
+                                                    className="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    min="0"
+                                                />
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <input
+                                                    type="number"
+                                                    value={data.expense1099}
+                                                    onChange={(e) => handleDriverDataChange(driverName, 'expense1099', parseFloat(e.target.value) || 0)}
+                                                    className="w-28 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    min="0"
+                                                />
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <input
+                                                    type="text"
+                                                    value={data.comments}
+                                                    onChange={(e) => handleDriverDataChange(driverName, 'comments', e.target.value)}
+                                                    className="w-40 px-2 py-1 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Notes..."
+                                                />
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                {/* Results */}
-                {payResults.length > 0 && (
+                {/* Results - Only show if payResults has data */}
+                {payResults.length > 0 && ( // Conditional rendering based on payResults.length
                     <div className="space-y-8">
                         {/* Individual Results */}
                         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
@@ -760,7 +764,7 @@ const DriverPayCalculator = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {payResults.map(result => (
+                                        {payResults.sort((a, b) => a.name.localeCompare(b.name)).map(result => (
                                             <tr key={result.name} className="border-b border-white/10 hover:bg-white/5 transition-colors duration-200">
                                                 <td className="py-3 px-4 text-white">{result.name}</td>
                                                 <td className="py-3 px-4 text-white">${result.dailyPay.toFixed(2)}</td>
@@ -783,6 +787,13 @@ const DriverPayCalculator = () => {
                                 </h2>
                             </div>
                         </div>
+                    </div>
+                )}
+                {/* Message when results are not displayed */}
+                {payResults.length === 0 && (
+                    <div className="mt-8 text-center text-gray-400 bg-white/5 p-4 rounded-lg border border-white/10">
+                        <p className="text-lg">Enter driver work details and click "Calculate & Save Current Pay" to see results.</p>
+                        <p className="text-sm mt-2">Results will clear automatically when driver data is changed.</p>
                     </div>
                 )}
 
@@ -835,7 +846,6 @@ const DriverPayCalculator = () => {
                             <p><strong>Total Hourly Pay:</strong> ${loadedArchiveDetails.totalHourlyPay ? loadedArchiveDetails.totalHourlyPay.toFixed(2) : '0.00'}</p>
                             <p><strong>Total 1099 Expense:</strong> ${loadedArchiveDetails.total1099Expense ? loadedArchiveDetails.total1099Expense.toFixed(2) : '0.00'}</p>
                             <p className="mt-2"><strong>Weekly Notes:</strong> {loadedArchiveDetails.weeklyNotes}</p>
-                            {/* Add archivedByUserId/Email here if you implement auth */}
                         </div>
                     )}
                     <p className="text-sm text-gray-400 mt-4 text-center">
@@ -843,8 +853,8 @@ const DriverPayCalculator = () => {
                     </p>
                 </div>
 
-            </div> {/* End container */}
-        </div> // End main div
+            </div>
+        </div>
     );
 };
 
