@@ -1,21 +1,25 @@
 // src/components/DriverPayCalculator.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp, Save } from 'lucide-react';
+import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp, Save, XCircle } from 'lucide-react'; // Added XCircle for modal close
 import BBA_LOGO from '../img/as.png'; // Adjust the path as necessary
 
-// Import Firebase (adjust path if you have a separate firebase config file)
+// Import Firebase
 import {
     db
-} from '../firebaseConfig'; // Assuming firebaseConfig.js is in the parent directory
+} from '../firebaseConfig';
 import {
-    doc,
+    doc,    
     getDoc,
     setDoc,
-    collection, // NEW: for querying collections
-    query,       // NEW: for building queries
-    getDocs,    // NEW: for getting multiple documents from a query
-    orderBy     // NEW: for ordering query results
+    collection,
+    query,
+    getDocs,
+    orderBy
 } from 'firebase/firestore';
+
+// Import React Datepicker components
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css'; // Don't forget to import the CSS!
 
 const defaultDriverData = {
     "Adisu": { dailyRate: 250, hourlyRate: 25, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
@@ -53,6 +57,14 @@ const DriverPayCalculator = () => {
     const [weeklyNotes, setWeeklyNotes] = useState("");
     const [loadedArchiveDetails, setLoadedArchiveDetails] = useState(null);
 
+    // NEW STATES FOR ARCHIVE MODAL
+    const [showArchiveModal, setShowArchiveModal] = useState(false);
+    const [payDate, setPayDate] = useState(null); // The specific pay date
+    const [periodStartDate, setPeriodStartDate] = useState(null); // Start of the work period
+    const [periodEndDate, setPeriodEndDate] = useState(null);     // End of the work period
+    const [tempWeeklyNotes, setTempWeeklyNotes] = useState("");   // For notes in modal
+
+
     // Function to save current driver data to Firebase (overwrites 'currentData')
     const saveCurrentDataToFirebase = useCallback(async (dataToSave, currentPayResults, currentTotalPay) => {
         try {
@@ -78,13 +90,23 @@ const DriverPayCalculator = () => {
         try {
             const q = query(collection(db, "payrollHistory"), orderBy("archiveTimestamp", "desc"));
             const querySnapshot = await getDocs(q);
-            const weeks = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                displayDate: doc.data().periodStartDate && doc.data().periodEndDate
-                    ? `${doc.data().periodStartDate} to ${doc.data().periodEndDate}`
-                    : (doc.data().archiveTimestamp ? `Archived: ${new Date(doc.data().archiveTimestamp).toLocaleDateString()}` : 'N/A Date'),
-                archiveTimestamp: doc.data().archiveTimestamp
-            }));
+            const weeks = querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                let displayString = '';
+                if (data.payDate) {
+                    displayString += `Pay Date: ${new Date(data.payDate).toLocaleDateString()}`;
+                }
+                if (data.periodStartDate && data.periodEndDate) {
+                    displayString += ` (Period: ${data.periodStartDate} to ${data.periodEndDate})`;
+                } else if (data.archiveTimestamp) {
+                    displayString += ` (Archived: ${new Date(data.archiveTimestamp).toLocaleDateString()})`;
+                }
+                return { 
+                    id: doc.id,
+                    displayDate: displayString || 'N/A Date',
+                    archiveTimestamp: data.archiveTimestamp
+                };
+            });
             setArchivedWeeks(weeks);
             if (weeks.length > 0 && !selectedArchiveId) {
                 setSelectedArchiveId(weeks[0].id);
@@ -117,6 +139,7 @@ const DriverPayCalculator = () => {
                 setTotalPay(data.totalPay || 0);
                 setWeeklyNotes(""); // Clear current weekly notes when loading an archive
                 setLoadedArchiveDetails({
+                    payDate: data.payDate,
                     periodStartDate: data.periodStartDate,
                     periodEndDate: data.periodEndDate,
                     archiveTimestamp: data.archiveTimestamp,
@@ -234,7 +257,7 @@ const DriverPayCalculator = () => {
             }
 
         }, 800);
-    }, [driverData, saveCurrentDataToFirebase]); // Dependencies for useCallback are correct
+    }, [driverData, saveCurrentDataToFirebase]);
 
     const resetToDefaults = async () => {
         if (window.confirm("Are you sure you want to reset all data to defaults? This will also clear the current data from Firebase.")) {
@@ -243,7 +266,7 @@ const DriverPayCalculator = () => {
             setTotalPay(0);
             setWeeklyNotes("");
             setLoadedArchiveDetails(null);
-            localStorage.removeItem('driverPayData');
+            localStorage.removeItem('driverPayData'); // This line might be vestigial if not using local storage anymore
 
             try {
                 const docRef = doc(db, "payroll", "currentData");
@@ -338,12 +361,40 @@ const DriverPayCalculator = () => {
         reader.readAsText(file);
     };
 
-    const archiveCurrentPayroll = useCallback(async () => {
-        if (!window.confirm("Are you sure you want to finalize and archive the current payroll? This will save a snapshot and clear the current work area for the next week.")) {
+    // This function now just opens the modal
+    const handleArchiveClick = () => {
+        if (payResults.length === 0) {
+            alert("Please calculate payroll first before archiving.");
+            return;
+        }
+        setTempWeeklyNotes(weeklyNotes);
+
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 7);
+
+        setPayDate(today);          // Default pay date to today
+        setPeriodStartDate(sevenDaysAgo); // Default period start to 7 days ago
+        setPeriodEndDate(today);      // Default period end to today
+
+        setShowArchiveModal(true);
+    };
+
+    // This function performs the actual archiving after dates are selected
+    const finalizeAndArchivePayroll = useCallback(async () => {
+        if (!payDate || !periodStartDate || !periodEndDate) {
+            alert("Please select a Pay Date, Period Start Date, and Period End Date.");
             return;
         }
 
-        setIsCalculating(true);
+        // Validate dates: start date must be before or equal to end date
+        if (periodStartDate.getTime() > periodEndDate.getTime()) {
+            alert("Period Start Date cannot be after Period End Date.");
+            return;
+        }
+
+        setIsCalculating(true); // Re-using this state for the archive process
+        setShowArchiveModal(false); // Close the modal
 
         try {
             // Recalculate just before archiving to ensure the latest data is used
@@ -388,21 +439,13 @@ const DriverPayCalculator = () => {
             setPayResults(currentPayResults);
             setTotalPay(currentTotalPay);
 
-            const today = new Date();
-            const archiveTimestamp = today.toISOString();
-
-            const periodEndDate = new Date(today);
-            const currentDayOfWeek = today.getDay();
-            if (currentDayOfWeek !== 0) {
-                periodEndDate.setDate(periodEndDate.getDate() + (7 - currentDayOfWeek)); // Adjust to next Sunday if not Sunday
-            }
+            const archiveTimestamp = new Date().toISOString();
+            const payDateISO = payDate.toISOString().split('T')[0];
+            const periodStartDateISO = periodStartDate.toISOString().split('T')[0];
             const periodEndDateISO = periodEndDate.toISOString().split('T')[0];
 
-            const periodStartDate = new Date(periodEndDate);
-            periodStartDate.setDate(periodEndDate.getDate() - 6);
-            const periodStartDateISO = periodStartDate.toISOString().split('T')[0];
-
-            const payrollWeekId = `payroll_${periodStartDateISO}_to_${periodEndDateISO}`;
+            // Use the Pay Date as the primary part of the document ID
+            const payrollWeekId = `payroll_paydate_${payDateISO}`;
 
             const numberOfDrivers = Object.keys(driverData).length;
 
@@ -412,6 +455,7 @@ const DriverPayCalculator = () => {
                 driverData: driverData, // Use the current driverData state
                 payResults: currentPayResults, // Use the just calculated pay results
                 totalPay: currentTotalPay, // Use the just calculated total pay
+                payDate: payDateISO, // Store the specific pay date
                 periodStartDate: periodStartDateISO,
                 periodEndDate: periodEndDateISO,
                 archiveTimestamp: archiveTimestamp,
@@ -420,20 +464,26 @@ const DriverPayCalculator = () => {
                 totalHourlyPay: totalHourlyPay,
                 totalRegularPay: totalRegularPayCalculated,
                 total1099Expense: total1099Expense,
-                weeklyNotes: weeklyNotes,
+                weeklyNotes: tempWeeklyNotes, // Use notes from the modal
             });
 
             console.log(`Current payroll archived as: ${payrollWeekId}`);
-            alert(`Payroll successfully archived for period ${periodStartDateISO} - ${periodEndDateISO}!`);
+            alert(`Payroll successfully archived for Pay Date: ${payDateISO}!`);
 
             // Reset the "currentData" document in Firebase and in local state
             await saveCurrentDataToFirebase(defaultDriverData, [], 0);
             setDriverData(defaultDriverData);
             setPayResults([]);
             setTotalPay(0);
-            setWeeklyNotes("");
+            setWeeklyNotes(""); // Clear main weekly notes
             setLoadedArchiveDetails(null);
             console.log("Current payroll data reset for next period.");
+
+            // Clear modal specific states
+            setPayDate(null);
+            setPeriodStartDate(null);
+            setPeriodEndDate(null);
+            setTempWeeklyNotes("");
 
             await fetchArchivedWeeksList();
 
@@ -443,7 +493,7 @@ const DriverPayCalculator = () => {
         } finally {
             setIsCalculating(false);
         }
-    }, [driverData, weeklyNotes, saveCurrentDataToFirebase, fetchArchivedWeeksList]);
+    }, [driverData, tempWeeklyNotes, payDate, periodStartDate, periodEndDate, saveCurrentDataToFirebase, fetchArchivedWeeksList]);
 
 
     // Initial data load for 'currentData' on component mount
@@ -463,7 +513,7 @@ const DriverPayCalculator = () => {
                     console.log("Current driver data loaded from Firebase.");
                 } else {
                     console.log("No 'currentData' found, initializing with defaults and saving.");
-                    await saveCurrentDataToFirebase(defaultDriverData, [], 0);
+                    await setDoc(docRef, { driverData: defaultDriverData, payResults: [], totalPay: 0, lastSaved: new Date().toISOString() });
                     setDriverData(defaultDriverData);
                     setPayResults([]);
                     setTotalPay(0);
@@ -551,14 +601,14 @@ const DriverPayCalculator = () => {
                         {isCalculating ? 'Calculating...' : 'Calculate & Save Current Pay'}
                     </button>
 
-                    {/* Finalize & Archive Payroll Button */}
+                    {/* Finalize & Archive Payroll Button - now opens modal */}
                     <button
-                        onClick={archiveCurrentPayroll}
+                        onClick={handleArchiveClick} // This now opens the modal
                         disabled={isCalculating || payResults.length === 0}
                         className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-500 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Save className="w-5 h-5 mr-2" />
-                        {isCalculating ? 'Archiving...' : 'Finalize & Archive Payroll'}
+                        Finalize & Archive Payroll
                     </button>
 
                     <button
@@ -637,7 +687,7 @@ const DriverPayCalculator = () => {
                     </div>
                 )}
 
-                {/* NEW: Input for Weekly Notes */}
+                {/* Input for Weekly Notes (Still here for initial entry)*/}
                 <div className="mb-8 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
                     <div className="flex items-center mb-6">
                         <FileText className="w-6 h-6 text-yellow-400 mr-3" />
@@ -647,7 +697,7 @@ const DriverPayCalculator = () => {
                         value={weeklyNotes}
                         onChange={(e) => setWeeklyNotes(e.target.value)}
                         rows="3"
-                        placeholder="Add any general notes for this payroll week (e.g., 'Holiday adjustments', 'New driver onboarding')..."
+                        placeholder="Add any general notes for this payroll week (these can be finalized in the archive popup)..."
                         className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     ></textarea>
                 </div>
@@ -741,7 +791,7 @@ const DriverPayCalculator = () => {
                 </div>
 
                 {/* Results - Only show if payResults has data */}
-                {payResults.length > 0 && ( // Conditional rendering based on payResults.length
+                {payResults.length > 0 && (
                     <div className="space-y-8">
                         {/* Individual Results */}
                         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
@@ -809,8 +859,7 @@ const DriverPayCalculator = () => {
                             id="archive-select"
                             value={selectedArchiveId}
                             onChange={(e) => setSelectedArchiveId(e.target.value)}
-                            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow"
-                            disabled={isLoading || archivedWeeks.length === 0}
+className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:text-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow"                            disabled={isLoading || archivedWeeks.length === 0}
                         >
                             {archivedWeeks.length === 0 ? (
                                 <option value="">No past payrolls available</option>
@@ -838,7 +887,10 @@ const DriverPayCalculator = () => {
                     {loadedArchiveDetails && (
                         <div className="mt-4 p-4 bg-white/5 rounded-lg text-gray-300 text-sm border border-white/10">
                             <h3 className="text-lg font-semibold text-white mb-2">Archived Payroll Summary:</h3>
-                            <p><strong>Period:</strong> {loadedArchiveDetails.periodStartDate} to {loadedArchiveDetails.periodEndDate}</p>
+                            {loadedArchiveDetails.payDate && <p><strong>Pay Date:</strong> {new Date(loadedArchiveDetails.payDate).toLocaleDateString()}</p>}
+                            {loadedArchiveDetails.periodStartDate && loadedArchiveDetails.periodEndDate && (
+                                <p><strong>Period:</strong> {loadedArchiveDetails.periodStartDate} to {loadedArchiveDetails.periodEndDate}</p>
+                            )}
                             <p><strong>Archived On:</strong> {loadedArchiveDetails.archiveTimestamp ? new Date(loadedArchiveDetails.archiveTimestamp).toLocaleString() : 'N/A'}</p>
                             <p><strong>Total Drivers:</strong> {loadedArchiveDetails.numberOfDrivers}</p>
                             <p><strong>Total Payroll Amount:</strong> ${loadedArchiveDetails.totalPay ? loadedArchiveDetails.totalPay.toFixed(2) : '0.00'}</p>
@@ -852,6 +904,102 @@ const DriverPayCalculator = () => {
                         **Important:** Loading a past payroll will replace the current data in the calculator for review. Remember to save if you make changes you want to keep for the *current* week before loading a past week.
                     </p>
                 </div>
+
+                {/* Archive Payroll Modal */}
+                {showArchiveModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm">
+                        <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-xl shadow-2xl border border-white/20 w-full max-w-md relative animate-fade-in-up">
+                            <button
+                                onClick={() => setShowArchiveModal(false)}
+                                className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors duration-200"
+                                aria-label="Close"
+                            >
+                                <XCircle className="w-6 h-6" />
+                            </button>
+                            <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+                                <Save className="w-6 h-6 mr-3 text-green-400" />
+                                Finalize & Archive Payroll
+                            </h2>
+
+                            {/* NEW: Pay Date Field (on top) */}
+                            <div className="mb-4">
+                                <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="payDate">
+                                    Payroll Pay Date: <span className="text-red-400">*</span>
+                                </label>
+                                <DatePicker
+                                    selected={payDate}
+                                    onChange={(date) => setPayDate(date)}
+                                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                    dateFormat="MM/dd/yyyy"
+                                    placeholderText="Select pay date"
+                                />
+                                <p className="text-gray-400 text-xs mt-1">This date will be the primary identifier for this archived payroll record.</p>
+                            </div>
+
+                            {/* Existing Period Start Date */}
+                            <div className="mb-4">
+                                <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="startDate">
+                                    Payroll Period Start Date: <span className="text-red-400">*</span>
+                                </label>
+                                <DatePicker
+                                    selected={periodStartDate}
+                                    onChange={(date) => setPeriodStartDate(date)}
+                                    selectsStart
+                                    startDate={periodStartDate}
+                                    endDate={periodEndDate}
+                                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                    dateFormat="MM/dd/yyyy"
+                                    placeholderText="Select start date"
+                                />
+                            </div>
+
+                            {/* Existing Period End Date */}
+                            <div className="mb-6">
+                                <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="endDate">
+                                    Payroll Period End Date: <span className="text-red-400">*</span>
+                                </label>
+                                <DatePicker
+                                    selected={periodEndDate}
+                                    onChange={(date) => setPeriodEndDate(date)}
+                                    selectsEnd
+                                    startDate={periodStartDate}
+                                    endDate={periodEndDate}
+                                    minDate={periodStartDate} // End date cannot be before start date
+                                    className="w-full px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                                    dateFormat="MM/dd/yyyy"
+                                    placeholderText="Select end date"
+                                />
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="modalNotes">
+                                    Weekly Notes (for archive):
+                                </label>
+                                <textarea
+                                    id="modalNotes"
+                                    value={tempWeeklyNotes}
+                                    onChange={(e) => setTempWeeklyNotes(e.target.value)}
+                                    rows="3"
+                                    placeholder="Add any specific notes for this archived payroll week..."
+                                    className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                ></textarea>
+                            </div>
+
+                            <button
+                                onClick={finalizeAndArchivePayroll}
+                                disabled={isCalculating || !payDate || !periodStartDate || !periodEndDate} // All three dates are required now
+                                className="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-500 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isCalculating ? (
+                                    <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                                ) : (
+                                    <Save className="w-5 h-5 mr-2" />
+                                )}
+                                Confirm & Archive
+                            </button>
+                        </div>
+                    </div>
+                )}
 
             </div>
         </div>
