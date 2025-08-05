@@ -22,26 +22,23 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css'; // Don't forget to import the CSS!
 
 const defaultDriverData = {
-    "Adisu": { dailyRate: 250, hourlyRate: 25, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Barnabas": { dailyRate: 250, hourlyRate: 25, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Birhanu": { dailyRate: 230, hourlyRate: 23, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Daniel": { dailyRate: 250, hourlyRate: 25, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "" },
-    "Dawit": { dailyRate: 230, hourlyRate: 23, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Ephrem": { dailyRate: 275, hourlyRate: 25, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Eshetu": { dailyRate: 230, hourlyRate: 23, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Eyouel": { dailyRate: 250, hourlyRate: 25, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Feleke": { dailyRate: 275, hourlyRate: 25, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Kaleab": { dailyRate: 312, hourlyRate: 26, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Keun": { dailyRate: 308, hourlyRate: 28, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Kirubel": { dailyRate: 230, hourlyRate: 0, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Mulugeta": { dailyRate: 230, hourlyRate: 25, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Mussie": { dailyRate: 250, hourlyRate: 25, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Semira": { dailyRate: 172.5, hourlyRate: 0, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Tekle": { dailyRate: 324, hourlyRate: 27, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Yared": { dailyRate: 275, hourlyRate: 25, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Yordanos": { dailyRate: 324, hourlyRate: 0, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Zebib": { dailyRate: 230, hourlyRate: 23, daysWorked: 6, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Zekarias": { dailyRate: 275, hourlyRate: 25, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" }
+  "Adisu J": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Barnabas": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "" },
+  "Birhanu": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Daniel": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "" },
+  "Dawit": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Eshetu": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Eyouel": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" }, 
+  "Kaleab": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Keun": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Kirubel": { dailyRate: 210, hourlyRate: 0, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Mulugeta": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Mussie": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Semira": { dailyRate: 172.5, hourlyRate: 0, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Tekle": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Yared": { dailyRate: 220, hourlyRate: 20, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Yordanos": { dailyRate: 324, hourlyRate: 0, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Zekarias": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" }
 };
 
 const DriverPayCalculator = () => {
