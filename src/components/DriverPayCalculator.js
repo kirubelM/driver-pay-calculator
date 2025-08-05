@@ -90,11 +90,11 @@ const DriverPayCalculator = () => {
             const weeks = querySnapshot.docs.map(doc => {
                 const data = doc.data();
                 let displayString = '';
-                if (data.payDate) {
-                    displayString += `Pay Date: ${new Date(data.payDate).toLocaleDateString()}`;
-                }
+                // if (data.payDate) {
+                //     displayString += `Pay Date: ${new Date(data.payDate).toLocaleDateString()}`;
+                // }
                 if (data.periodStartDate && data.periodEndDate) {
-                    displayString += ` (Period: ${data.periodStartDate} to ${data.periodEndDate})`;
+                    displayString += ` Period: ${data.periodStartDate} to ${data.periodEndDate}`;
                 } else if (data.archiveTimestamp) {
                     displayString += ` (Archived: ${new Date(data.archiveTimestamp).toLocaleDateString()})`;
                 }
@@ -856,7 +856,7 @@ const DriverPayCalculator = () => {
                             id="archive-select"
                             value={selectedArchiveId}
                             onChange={(e) => setSelectedArchiveId(e.target.value)}
-className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:text-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow"                            disabled={isLoading || archivedWeeks.length === 0}
+className="px-4 py-2 bg-white border border-white/20 rounded-lg text-black focus:text-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow"                            disabled={isLoading || archivedWeeks.length === 0}
                         >
                             {archivedWeeks.length === 0 ? (
                                 <option value="">No past payrolls available</option>
