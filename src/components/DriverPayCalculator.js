@@ -30,12 +30,11 @@ const defaultDriverData = {
   "Eshetu": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Eyouel": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" }, 
   "Kaleab": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Keun": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Kirubel": { dailyRate: 210, hourlyRate: 0, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Kirubel": { dailyRate: 210, hourlyRate: 21, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Mulugeta": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Mussie": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Semira": { dailyRate: 172.5, hourlyRate: 0, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Tekle": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Semira": { dailyRate: 140, hourlyRate: 20, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Tekle": { dailyRate: 242, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Yared": { dailyRate: 220, hourlyRate: 20, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Yordanos": { dailyRate: 324, hourlyRate: 0, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Zekarias": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" }
@@ -667,7 +666,7 @@ const DriverPayCalculator = () => {
                                                     className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
                                             </div>
-                                            <div>
+                                            {/* <div>
                                                 <label className="block text-sm text-gray-300 mb-1">Hourly Rate ($)</label>
                                                 <input
                                                     type="number"
@@ -675,7 +674,7 @@ const DriverPayCalculator = () => {
                                                     onChange={(e) => handleRateChange(driverName, 'hourlyRate', e.target.value)}
                                                     className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
-                                            </div>
+                                            </div> */}
                                         </div>
                                     </div>
                                 );
