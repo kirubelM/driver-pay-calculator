@@ -1,14 +1,14 @@
 {
   "files": {
-    "main.css": "/driver-pay-calculator/static/css/main.3587a6ac.css",
-    "main.js": "/driver-pay-calculator/static/js/main.fd388f17.js",
-    "static/media/as.png": "/driver-pay-calculator/static/media/as.bed89ee9cb21d1443720.png",
-    "index.html": "/driver-pay-calculator/index.html",
-    "main.3587a6ac.css.map": "/driver-pay-calculator/static/css/main.3587a6ac.css.map",
-    "main.fd388f17.js.map": "/driver-pay-calculator/static/js/main.fd388f17.js.map"
+    "main.css": "/static/css/main.3587a6ac.css",
+    "main.js": "/static/js/main.098215bb.js",
+    "static/media/as.png": "/static/media/as.bed89ee9cb21d1443720.png",
+    "index.html": "/index.html",
+    "main.3587a6ac.css.map": "/static/css/main.3587a6ac.css.map",
+    "main.098215bb.js.map": "/static/js/main.098215bb.js.map"
   },
   "entrypoints": [
     "static/css/main.3587a6ac.css",
-    "static/js/main.fd388f17.js"
+    "static/js/main.098215bb.js"
   ]
 }
