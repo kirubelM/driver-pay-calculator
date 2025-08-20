@@ -37,7 +37,7 @@ const defaultDriverData = {
   "Tekle": { dailyRate: 264, hourlyRate: 22, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Yared": { dailyRate: 220, hourlyRate: 20, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Yordanos": { dailyRate: 250, hourlyRate: 0, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Zekarias": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" }
+  "Zekarias": { dailyRate: 220, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" }
 };
 
 const DriverPayCalculator = () => {
