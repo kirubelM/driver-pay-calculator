@@ -1,14 +1,12 @@
 // src/components/DriverPayCalculator.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp, Save, XCircle } from 'lucide-react'; // Added XCircle for modal close
-import BBA_LOGO from '../img/as.png'; // Adjust the path as necessary
+import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp, Save, XCircle } from 'lucide-react';
+import BBA_LOGO from '../img/as.png';
 
 // Import Firebase
+import { db, auth } from '../firebaseConfig';
 import {
-    db
-} from '../firebaseConfig';
-import {
-    doc,    
+    doc,
     getDoc,
     setDoc,
     collection,
@@ -19,28 +17,27 @@ import {
 
 // Import React Datepicker components
 import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css'; // Don't forget to import the CSS!
+import 'react-datepicker/dist/react-datepicker.css';
 
 const defaultDriverData = {
-  "Adisu J": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Barnabas": { dailyRate: 220, hourlyRate: 22, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "" },
-  "Birhanu": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Daniel": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "" },
-  "Dawit": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Eshetu": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Eyouel": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" }, 
-  "Kaleab": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Kirubel": { dailyRate: 210, hourlyRate: 21, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Mulugeta": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Mussie": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Semira": { dailyRate: 140, hourlyRate: 20, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Tekle": { dailyRate: 264, hourlyRate: 22, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Yared": { dailyRate: 220, hourlyRate: 20, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Yordanos": { dailyRate: 250, hourlyRate: 0, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Zekarias": { dailyRate: 220, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" }
+    "Adisu": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Barnabas": { dailyRate: 220, hourlyRate: 22, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "" },
+    "Birhanu": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Daniel": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "" },
+    "Eshetu": { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Eyouel": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Kaleab": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Kirubel": { dailyRate: 210, hourlyRate: 21, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Mulugeta": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Mussie": { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Semira": { dailyRate: 140, hourlyRate: 20, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Tekle": { dailyRate: 264, hourlyRate: 22, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Yared": { dailyRate: 220, hourlyRate: 20, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Yordanos": { dailyRate: 250, hourlyRate: 0, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Zekarias": { dailyRate: 220, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
 };
 
-const DriverPayCalculator = () => {
+const DriverPayCalculator = ({ viewingUserId }) => {
     const [driverData, setDriverData] = useState({});
     const [showSettings, setShowSettings] = useState(false);
     const [payResults, setPayResults] = useState([]);
@@ -53,51 +50,65 @@ const DriverPayCalculator = () => {
     const [weeklyNotes, setWeeklyNotes] = useState("");
     const [loadedArchiveDetails, setLoadedArchiveDetails] = useState(null);
 
-    // NEW STATES FOR ARCHIVE MODAL
     const [showArchiveModal, setShowArchiveModal] = useState(false);
-    const [payDate, setPayDate] = useState(null); // The specific pay date
-    const [periodStartDate, setPeriodStartDate] = useState(null); // Start of the work period
-    const [periodEndDate, setPeriodEndDate] = useState(null);     // End of the work period
-    const [tempWeeklyNotes, setTempWeeklyNotes] = useState("");   // For notes in modal
+    const [payDate, setPayDate] = useState(null);
+    const [periodStartDate, setPeriodStartDate] = useState(null);
+    const [periodEndDate, setPeriodEndDate] = useState(null);
+    const [tempWeeklyNotes, setTempWeeklyNotes] = useState("");
 
+    // Get current user ID
+    const userId = viewingUserId || auth.currentUser?.uid;  // Use prop if available
 
-    // Function to save current driver data to Firebase (overwrites 'currentData')
+    // Helper function to get user-specific document paths
+    const getUserDocPath = (docType) => {
+        return `users/${userId}/${docType}`;
+    };
+
+    // Function to save current driver data to Firebase (user-specific)
     const saveCurrentDataToFirebase = useCallback(async (dataToSave, currentPayResults, currentTotalPay) => {
+        if (!userId) {
+            console.error("No user logged in");
+            return false;
+        }
+
         try {
-            const docRef = doc(db, "payroll", "currentData");
+            const docRef = doc(db, "users", userId, "payroll", "currentData");
             await setDoc(docRef, {
                 driverData: dataToSave,
                 payResults: currentPayResults,
                 totalPay: currentTotalPay,
-                lastSaved: new Date().toISOString()
+                lastSaved: new Date().toISOString(),
+                userEmail: auth.currentUser?.email || "unknown"
             });
-            console.log("Current driver data saved to Firebase.");
-            return true; // Indicate success
+            console.log("Current driver data saved to Firebase for user:", userId);
+            return true;
         } catch (error) {
             console.error("Error saving current data to Firebase:", error);
             alert("Failed to save current data.");
-            return false; // Indicate failure
+            return false;
         }
-    }, []);
+    }, [userId]);
 
-    // Function to fetch the list of all archived payroll weeks
+    // Function to fetch the list of all archived payroll weeks (user-specific)
     const fetchArchivedWeeksList = useCallback(async () => {
+        if (!userId) return;
+
         setIsLoading(true);
         try {
-            const q = query(collection(db, "payrollHistory"), orderBy("archiveTimestamp", "desc"));
+            const q = query(
+                collection(db, "users", userId, "payrollHistory"),
+                orderBy("archiveTimestamp", "desc")
+            );
             const querySnapshot = await getDocs(q);
             const weeks = querySnapshot.docs.map(doc => {
                 const data = doc.data();
                 let displayString = '';
-                // if (data.payDate) {
-                //     displayString += `Pay Date: ${new Date(data.payDate).toLocaleDateString()}`;
-                // }
                 if (data.periodStartDate && data.periodEndDate) {
-                    displayString += ` Period: ${data.periodStartDate} to ${data.periodEndDate}`;
+                    displayString += ` ${data.periodStartDate} to ${data.periodEndDate}`;
                 } else if (data.archiveTimestamp) {
                     displayString += ` (Archived: ${new Date(data.archiveTimestamp).toLocaleDateString()})`;
                 }
-                return { 
+                return {
                     id: doc.id,
                     displayDate: displayString || 'N/A Date',
                     archiveTimestamp: data.archiveTimestamp
@@ -107,25 +118,25 @@ const DriverPayCalculator = () => {
             if (weeks.length > 0 && !selectedArchiveId) {
                 setSelectedArchiveId(weeks[0].id);
             }
-            console.log("Archived weeks list fetched:", weeks);
+            console.log("Archived weeks list fetched for user:", userId);
         } catch (error) {
             console.error("Error fetching archived weeks list:", error);
             alert("Failed to load list of past payrolls.");
         } finally {
             setIsLoading(false);
         }
-    }, [selectedArchiveId]);
+    }, [selectedArchiveId, userId]);
 
-    // Function to load a selected archived payroll data
+    // Function to load a selected archived payroll data (user-specific)
     const loadSelectedArchive = useCallback(async () => {
-        if (!selectedArchiveId) {
+        if (!selectedArchiveId || !userId) {
             alert("Please select a payroll week to load.");
             return;
         }
 
         setIsLoading(true);
         try {
-            const docRef = doc(db, "payrollHistory", selectedArchiveId);
+            const docRef = doc(db, "users", userId, "payrollHistory", selectedArchiveId);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
@@ -133,7 +144,7 @@ const DriverPayCalculator = () => {
                 setDriverData(data.driverData || defaultDriverData);
                 setPayResults(data.payResults || []);
                 setTotalPay(data.totalPay || 0);
-                setWeeklyNotes(""); // Clear current weekly notes when loading an archive
+                setWeeklyNotes("");
                 setLoadedArchiveDetails({
                     payDate: data.payDate,
                     periodStartDate: data.periodStartDate,
@@ -159,7 +170,7 @@ const DriverPayCalculator = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [selectedArchiveId]);
+    }, [selectedArchiveId, userId]);
 
     const calculatePay = (hoursWorked, hourlyRate, daysWorked, dailyRate, expense1099) => {
         const hWorked = parseFloat(hoursWorked) || 0;
@@ -177,26 +188,32 @@ const DriverPayCalculator = () => {
     };
 
     const handleDriverDataChange = (driverName, field, value) => {
-        setDriverData(prev => ({
-            ...prev,
-            [driverName]: {
-                ...prev[driverName],
-                [field]: value
-            }
-        }));
+        setDriverData(prev => {
+            const currentDriver = prev[driverName] || {};
+            return {
+                ...prev,
+                [driverName]: {
+                    ...currentDriver,
+                    [field]: value
+                }
+            };
+        });
     };
 
     const handleRateChange = (driverName, field, value) => {
-        setDriverData(prev => ({
-            ...prev,
-            [driverName]: {
-                ...prev[driverName],
-                [field]: parseFloat(value) || 0
-            }
-        }));
+        const numValue = value === '' ? 0 : parseFloat(value);
+        setDriverData(prev => {
+            const currentDriver = prev[driverName] || {};
+            return {
+                ...prev,
+                [driverName]: {
+                    ...currentDriver,
+                    [field]: isNaN(numValue) ? 0 : numValue
+                }
+            };
+        });
     };
 
-    // Calculate all drivers' pay and save to Firebase, only when called explicitly
     const calculateAndSaveCurrentPayroll = useCallback(async () => {
         setIsCalculating(true);
 
@@ -246,7 +263,6 @@ const DriverPayCalculator = () => {
             setTotalPay(totalPayAll);
             setIsCalculating(false);
 
-            // Save the current calculated data to Firebase
             const saveSuccess = await saveCurrentDataToFirebase(driverData, results, totalPayAll);
             if (saveSuccess) {
                 alert("Payroll calculated and current data saved!");
@@ -262,12 +278,17 @@ const DriverPayCalculator = () => {
             setTotalPay(0);
             setWeeklyNotes("");
             setLoadedArchiveDetails(null);
-            localStorage.removeItem('driverPayData'); // This line might be vestigial if not using local storage anymore
 
             try {
-                const docRef = doc(db, "payroll", "currentData");
-                await setDoc(docRef, { driverData: defaultDriverData, payResults: [], totalPay: 0, lastSaved: new Date().toISOString() });
-                console.log("Firebase 'currentData' reset to defaults.");
+                const docRef = doc(db, "users", userId, "payroll", "currentData");
+                await setDoc(docRef, {
+                    driverData: defaultDriverData,
+                    payResults: [],
+                    totalPay: 0,
+                    lastSaved: new Date().toISOString(),
+                    userEmail: auth.currentUser?.email || "unknown"
+                });
+                console.log("Firebase 'currentData' reset to defaults for user:", userId);
                 alert("All current data reset successfully!");
             } catch (error) {
                 console.error("Error resetting Firebase data:", error);
@@ -281,7 +302,7 @@ const DriverPayCalculator = () => {
 
         const csvContent = [
             ['Driver', 'Days Worked', 'Daily Rate', 'Daily Pay', 'Hours Worked', 'Hourly Rate', 'Hourly Pay', '1099 Expense', 'Regular Pay', 'Total Pay', 'Comments'],
-            ...payResults.sort((a, b) => a.name.localeCompare(b.name)).map(result => [ // Sorted for CSV export
+            ...payResults.sort((a, b) => a.name.localeCompare(b.name)).map(result => [
                 result.name,
                 result.daysWorked ?? 0,
                 result.dailyRate ?? 0,
@@ -311,7 +332,8 @@ const DriverPayCalculator = () => {
             payResults,
             totalPay,
             weeklyNotes,
-            exportDate: new Date().toISOString()
+            exportDate: new Date().toISOString(),
+            userId: userId
         };
 
         const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
@@ -357,7 +379,6 @@ const DriverPayCalculator = () => {
         reader.readAsText(file);
     };
 
-    // This function now just opens the modal
     const handleArchiveClick = () => {
         if (payResults.length === 0) {
             alert("Please calculate payroll first before archiving.");
@@ -369,31 +390,28 @@ const DriverPayCalculator = () => {
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(today.getDate() - 7);
 
-        setPayDate(today);          // Default pay date to today
-        setPeriodStartDate(sevenDaysAgo); // Default period start to 7 days ago
-        setPeriodEndDate(today);      // Default period end to today
+        setPayDate(today);
+        setPeriodStartDate(sevenDaysAgo);
+        setPeriodEndDate(today);
 
         setShowArchiveModal(true);
     };
 
-    // This function performs the actual archiving after dates are selected
     const finalizeAndArchivePayroll = useCallback(async () => {
-        if (!payDate || !periodStartDate || !periodEndDate) {
+        if (!payDate || !periodStartDate || !periodEndDate || !userId) {
             alert("Please select a Pay Date, Period Start Date, and Period End Date.");
             return;
         }
 
-        // Validate dates: start date must be before or equal to end date
         if (periodStartDate.getTime() > periodEndDate.getTime()) {
             alert("Period Start Date cannot be after Period End Date.");
             return;
         }
 
-        setIsCalculating(true); // Re-using this state for the archive process
-        setShowArchiveModal(false); // Close the modal
+        setIsCalculating(true);
+        setShowArchiveModal(false);
 
         try {
-            // Recalculate just before archiving to ensure the latest data is used
             let currentTotalPay = 0;
             const currentPayResults = [];
             let totalDailyPay = 0;
@@ -431,7 +449,6 @@ const DriverPayCalculator = () => {
                 });
             });
 
-            // Set state for current session for display
             setPayResults(currentPayResults);
             setTotalPay(currentTotalPay);
 
@@ -440,18 +457,16 @@ const DriverPayCalculator = () => {
             const periodStartDateISO = periodStartDate.toISOString().split('T')[0];
             const periodEndDateISO = periodEndDate.toISOString().split('T')[0];
 
-            // Use the Pay Date as the primary part of the document ID
             const payrollWeekId = `payroll_paydate_${payDateISO}`;
-
             const numberOfDrivers = Object.keys(driverData).length;
 
-            const historyDocRef = doc(db, "payrollHistory", payrollWeekId);
+            const historyDocRef = doc(db, "users", userId, "payrollHistory", payrollWeekId);
 
             await setDoc(historyDocRef, {
-                driverData: driverData, // Use the current driverData state
-                payResults: currentPayResults, // Use the just calculated pay results
-                totalPay: currentTotalPay, // Use the just calculated total pay
-                payDate: payDateISO, // Store the specific pay date
+                driverData: driverData,
+                payResults: currentPayResults,
+                totalPay: currentTotalPay,
+                payDate: payDateISO,
                 periodStartDate: periodStartDateISO,
                 periodEndDate: periodEndDateISO,
                 archiveTimestamp: archiveTimestamp,
@@ -460,22 +475,19 @@ const DriverPayCalculator = () => {
                 totalHourlyPay: totalHourlyPay,
                 totalRegularPay: totalRegularPayCalculated,
                 total1099Expense: total1099Expense,
-                weeklyNotes: tempWeeklyNotes, // Use notes from the modal
+                weeklyNotes: tempWeeklyNotes,
             });
 
-            console.log(`Current payroll archived as: ${payrollWeekId}`);
+            console.log(`Current payroll archived as: ${payrollWeekId} for user: ${userId}`);
             alert(`Payroll successfully archived for Pay Date: ${payDateISO}!`);
 
-            // Reset the "currentData" document in Firebase and in local state
             await saveCurrentDataToFirebase(defaultDriverData, [], 0);
             setDriverData(defaultDriverData);
             setPayResults([]);
             setTotalPay(0);
-            setWeeklyNotes(""); // Clear main weekly notes
+            setWeeklyNotes("");
             setLoadedArchiveDetails(null);
-            console.log("Current payroll data reset for next period.");
 
-            // Clear modal specific states
             setPayDate(null);
             setPeriodStartDate(null);
             setPeriodEndDate(null);
@@ -489,15 +501,19 @@ const DriverPayCalculator = () => {
         } finally {
             setIsCalculating(false);
         }
-    }, [driverData, tempWeeklyNotes, payDate, periodStartDate, periodEndDate, saveCurrentDataToFirebase, fetchArchivedWeeksList]);
+    }, [driverData, tempWeeklyNotes, payDate, periodStartDate, periodEndDate, userId, saveCurrentDataToFirebase, fetchArchivedWeeksList]);
 
-
-    // Initial data load for 'currentData' on component mount
+    // Initial data load for 'currentData' on component mount (user-specific)
     useEffect(() => {
         const loadInitialData = async () => {
+            if (!userId) {
+                console.error("No user ID available");
+                return;
+            }
+
             setIsLoading(true);
             try {
-                const docRef = doc(db, "payroll", "currentData");
+                const docRef = doc(db, "users", userId, "payroll", "currentData");
                 const docSnap = await getDoc(docRef);
 
                 if (docSnap.exists()) {
@@ -506,10 +522,16 @@ const DriverPayCalculator = () => {
                     setPayResults(data.payResults || []);
                     setTotalPay(data.totalPay || 0);
                     setWeeklyNotes("");
-                    console.log("Current driver data loaded from Firebase.");
+                    console.log("Current driver data loaded from Firebase for user:", userId);
                 } else {
-                    console.log("No 'currentData' found, initializing with defaults and saving.");
-                    await setDoc(docRef, { driverData: defaultDriverData, payResults: [], totalPay: 0, lastSaved: new Date().toISOString() });
+                    console.log("No 'currentData' found for user, initializing with defaults and saving.");
+                    await setDoc(docRef, {
+                        driverData: defaultDriverData,
+                        payResults: [],
+                        totalPay: 0,
+                        lastSaved: new Date().toISOString(),
+                        userEmail: auth.currentUser?.email || "unknown" 
+                    });
                     setDriverData(defaultDriverData);
                     setPayResults([]);
                     setTotalPay(0);
@@ -527,16 +549,7 @@ const DriverPayCalculator = () => {
 
         loadInitialData();
         fetchArchivedWeeksList();
-    }, [saveCurrentDataToFirebase, fetchArchivedWeeksList]);
-
-
-    // NEW useEffect: Clear payResults and totalPay when driverData changes
-    useEffect(() => {
-        // This effect runs whenever driverData state object changes.
-        // It visually resets the calculation results, indicating they are stale.
-        setPayResults([]);
-        setTotalPay(0);
-    }, [driverData]); // Dependency on driverData
+    }, [userId, fetchArchivedWeeksList]);
 
     if (isLoading) {
         return (
@@ -547,11 +560,9 @@ const DriverPayCalculator = () => {
         );
     }
 
-    // Helper function to get sorted driver names
     const getSortedDriverNames = () => {
         return Object.keys(driverData).sort((a, b) => a.localeCompare(b));
     };
-
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-900">
@@ -571,6 +582,11 @@ const DriverPayCalculator = () => {
                         <img src={BBA_LOGO} alt="BBA Logo" className="w-60 h-30 rounded-full " />
                     </div>
                     <div className="text-3xl font-bold mb-4 text-white "> BBA Payroll Calculator</div>
+                    {userId && (
+                        <div className="text-sm text-gray-400">
+                            User ID: {userId.substring(0, 8)}...
+                        </div>
+                    )}
                 </div>
 
                 {/* Controls */}
@@ -583,7 +599,6 @@ const DriverPayCalculator = () => {
                         Rate Settings
                     </button>
 
-                    {/* Calculate Pay button now only calculates and saves when clicked */}
                     <button
                         onClick={calculateAndSaveCurrentPayroll}
                         disabled={isCalculating}
@@ -597,9 +612,8 @@ const DriverPayCalculator = () => {
                         {isCalculating ? 'Calculating...' : 'Calculate & Save Current Pay'}
                     </button>
 
-                    {/* Finalize & Archive Payroll Button - now opens modal */}
                     <button
-                        onClick={handleArchiveClick} // This now opens the modal
+                        onClick={handleArchiveClick}
                         disabled={isCalculating || payResults.length === 0}
                         className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-500 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -666,15 +680,6 @@ const DriverPayCalculator = () => {
                                                     className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
                                             </div>
-                                            {/* <div>
-                                                <label className="block text-sm text-gray-300 mb-1">Hourly Rate ($)</label>
-                                                <input
-                                                    type="number"
-                                                    value={data.hourlyRate}
-                                                    onChange={(e) => handleRateChange(driverName, 'hourlyRate', e.target.value)}
-                                                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                />
-                                            </div> */}
                                         </div>
                                     </div>
                                 );
@@ -683,7 +688,7 @@ const DriverPayCalculator = () => {
                     </div>
                 )}
 
-                {/* Input for Weekly Notes (Still here for initial entry)*/}
+                {/* Input for Weekly Notes */}
                 <div className="mb-8 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
                     <div className="flex items-center mb-6">
                         <FileText className="w-6 h-6 text-yellow-400 mr-3" />
@@ -746,27 +751,30 @@ const DriverPayCalculator = () => {
                                                 <input
                                                     type="number"
                                                     value={data.daysWorked}
-                                                    onChange={(e) => handleDriverDataChange(driverName, 'daysWorked', parseFloat(e.target.value) || 0)}
+                                                    onChange={(e) => handleDriverDataChange(driverName, 'daysWorked', e.target.value)}
                                                     className="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     min="0"
+                                                    step="1"
                                                 />
                                             </td>
                                             <td className="py-3 px-4">
                                                 <input
                                                     type="number"
                                                     value={data.hoursWorked}
-                                                    onChange={(e) => handleDriverDataChange(driverName, 'hoursWorked', parseFloat(e.target.value) || 0)}
+                                                    onChange={(e) => handleDriverDataChange(driverName, 'hoursWorked', e.target.value)}
                                                     className="w-20 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     min="0"
+                                                    step="1"
                                                 />
                                             </td>
                                             <td className="py-3 px-4">
                                                 <input
                                                     type="number"
                                                     value={data.expense1099}
-                                                    onChange={(e) => handleDriverDataChange(driverName, 'expense1099', parseFloat(e.target.value) || 0)}
+                                                    onChange={(e) => handleDriverDataChange(driverName, 'expense1099', e.target.value)}
                                                     className="w-28 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     min="0"
+                                                    step="0.01"
                                                 />
                                             </td>
                                             <td className="py-3 px-4">
@@ -786,10 +794,9 @@ const DriverPayCalculator = () => {
                     </div>
                 </div>
 
-                {/* Results - Only show if payResults has data */}
+                {/* Results */}
                 {payResults.length > 0 && (
                     <div className="space-y-8">
-                        {/* Individual Results */}
                         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
                             <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
                                 <FileText className="w-6 h-6 mr-3 text-blue-400" />
@@ -825,7 +832,6 @@ const DriverPayCalculator = () => {
                                 </table>
                             </div>
 
-                            {/* Overall Total Pay */}
                             <div className="mt-8 text-center text-white bg-blue-700/30 rounded-xl p-4 border border-blue-600/50 shadow-lg">
                                 <h2 className="text-3xl font-bold flex items-center justify-center">
                                     <TrendingUp className="w-8 h-8 mr-3 text-blue-400" />
@@ -835,7 +841,7 @@ const DriverPayCalculator = () => {
                         </div>
                     </div>
                 )}
-                {/* Message when results are not displayed */}
+
                 {payResults.length === 0 && (
                     <div className="mt-8 text-center text-gray-400 bg-white/5 p-4 rounded-lg border border-white/10">
                         <p className="text-lg">Enter driver work details and click "Calculate & Save Current Pay" to see results.</p>
@@ -855,7 +861,8 @@ const DriverPayCalculator = () => {
                             id="archive-select"
                             value={selectedArchiveId}
                             onChange={(e) => setSelectedArchiveId(e.target.value)}
-className="px-4 py-2 bg-white border border-white/20 rounded-lg text-black focus:text-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow"                            disabled={isLoading || archivedWeeks.length === 0}
+                            className="px-4 py-2 bg-white border border-white/20 rounded-lg text-black focus:text-black focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow"
+                            disabled={isLoading || archivedWeeks.length === 0}
                         >
                             {archivedWeeks.length === 0 ? (
                                 <option value="">No past payrolls available</option>
@@ -863,8 +870,8 @@ className="px-4 py-2 bg-white border border-white/20 rounded-lg text-black focus
                                 <>
                                     <option value="">-- Select a Past Week --</option>
                                     {archivedWeeks.map(week => (
-                                        <option key={week.id} value={week.id}>
-                                            {week.displayDate} ({week.id})
+                                        <option key={week.id} value={week.id}>{week.displayDate}
+                                            {/* ({week.id}) */}
                                         </option>
                                     ))}
                                 </>
@@ -879,7 +886,7 @@ className="px-4 py-2 bg-white border border-white/20 rounded-lg text-black focus
                             {isLoading ? 'Loading...' : 'Load Selected Payroll'}
                         </button>
                     </div>
-                    {/* Display more details from the loaded archive if available */}
+
                     {loadedArchiveDetails && (
                         <div className="mt-4 p-4 bg-white/5 rounded-lg text-gray-300 text-sm border border-white/10">
                             <h3 className="text-lg font-semibold text-white mb-2">Archived Payroll Summary:</h3>
@@ -917,7 +924,6 @@ className="px-4 py-2 bg-white border border-white/20 rounded-lg text-black focus
                                 Finalize & Archive Payroll
                             </h2>
 
-                            {/* NEW: Pay Date Field (on top) */}
                             <div className="mb-4">
                                 <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="payDate">
                                     Payroll Pay Date: <span className="text-red-400">*</span>
@@ -932,7 +938,6 @@ className="px-4 py-2 bg-white border border-white/20 rounded-lg text-black focus
                                 <p className="text-gray-400 text-xs mt-1">This date will be the primary identifier for this archived payroll record.</p>
                             </div>
 
-                            {/* Existing Period Start Date */}
                             <div className="mb-4">
                                 <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="startDate">
                                     Payroll Period Start Date: <span className="text-red-400">*</span>
@@ -949,7 +954,6 @@ className="px-4 py-2 bg-white border border-white/20 rounded-lg text-black focus
                                 />
                             </div>
 
-                            {/* Existing Period End Date */}
                             <div className="mb-6">
                                 <label className="block text-gray-300 text-sm font-bold mb-2" htmlFor="endDate">
                                     Payroll Period End Date: <span className="text-red-400">*</span>
@@ -960,7 +964,7 @@ className="px-4 py-2 bg-white border border-white/20 rounded-lg text-black focus
                                     selectsEnd
                                     startDate={periodStartDate}
                                     endDate={periodEndDate}
-                                    minDate={periodStartDate} // End date cannot be before start date
+                                    minDate={periodStartDate}
                                     className="w-full px-4 py-2 rounded-lg bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                                     dateFormat="MM/dd/yyyy"
                                     placeholderText="Select end date"
@@ -983,7 +987,7 @@ className="px-4 py-2 bg-white border border-white/20 rounded-lg text-black focus
 
                             <button
                                 onClick={finalizeAndArchivePayroll}
-                                disabled={isCalculating || !payDate || !periodStartDate || !periodEndDate} // All three dates are required now
+                                disabled={isCalculating || !payDate || !periodStartDate || !periodEndDate}
                                 className="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-500 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isCalculating ? (
