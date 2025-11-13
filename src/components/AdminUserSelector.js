@@ -1,6 +1,6 @@
 // src/components/AdminUserSelector.js
 import React, { useState, useEffect } from 'react';
-import { Shield, Users, Search, XCircle, RefreshCw } from 'lucide-react';
+import { Shield, Users, Search, XCircle, RefreshCw, AlertCircle } from 'lucide-react';
 import { db, auth } from '../firebaseConfig';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { isCurrentUserAdmin } from '../utils/adminConfig';
@@ -10,6 +10,7 @@ const AdminUserSelector = ({ onUserSelect, currentViewingUserId }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
+    const [error, setError] = useState(null);
 
     // Check if current user is admin
     useEffect(() => {
@@ -30,6 +31,7 @@ const AdminUserSelector = ({ onUserSelect, currentViewingUserId }) => {
 
     const fetchAllUsers = async () => {
         setIsLoading(true);
+        setError(null);
         try {
             console.log('🔍 Starting to fetch all users...');
             
@@ -90,23 +92,28 @@ const AdminUserSelector = ({ onUserSelect, currentViewingUserId }) => {
             setAllUsers(usersList);
             
             if (usersList.length === 0) {
-                alert('No users found in the database. Users will appear here after they create their first payroll.');
+                setError('No users found in the database. Users will appear here after they create their first payroll.');
             }
         } catch (error) {
             console.error('❌ Error fetching users:', error);
-            alert(`Failed to load users list: ${error.message}`);
+            setError(`Failed to load users list: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleUserSelection = (userId, email) => {
+        console.log('🔀 User selection clicked:', userId, email);
         if (window.confirm(`Switch to viewing ${email}'s payroll data?`)) {
+            console.log('✅ User confirmed switch to:', userId);
             onUserSelect(userId);
+        } else {
+            console.log('❌ User cancelled switch');
         }
     };
 
     const handleViewAsCurrentUser = () => {
+        console.log('🔙 Returning to own data');
         if (window.confirm('Return to viewing your own payroll data?')) {
             onUserSelect(auth.currentUser.uid);
         }
@@ -126,7 +133,7 @@ const AdminUserSelector = ({ onUserSelect, currentViewingUserId }) => {
     console.log('✅ Admin panel IS rendering - showing UI');
 
     return (
-        <div className="mb-6 bg-gradient-to-r from-orange-900/40 to-red-900/40 backdrop-blur-lg rounded-2xl p-6 border-2 border-orange-500/50 shadow-2xl">
+        <div className="bg-gradient-to-r from-orange-900/40 to-red-900/40 backdrop-blur-lg rounded-2xl p-6 border-2 border-orange-500/50 shadow-2xl">
             <div className="flex items-center mb-4">
                 <Shield className="w-6 h-6 text-orange-400 mr-3" />
                 <h2 className="text-2xl font-bold text-white">Admin Panel - View As User</h2>
@@ -140,6 +147,7 @@ const AdminUserSelector = ({ onUserSelect, currentViewingUserId }) => {
                 </button>
             </div>
 
+            {/* Current viewing status */}
             {currentViewingUserId !== auth.currentUser.uid && (
                 <div className="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/50 rounded-lg flex items-center justify-between">
                     <div className="flex items-center">
@@ -154,6 +162,14 @@ const AdminUserSelector = ({ onUserSelect, currentViewingUserId }) => {
                     >
                         Return to My Data
                     </button>
+                </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg flex items-start">
+                    <AlertCircle className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" />
+                    <p className="text-red-300 text-sm">{error}</p>
                 </div>
             )}
 
@@ -188,7 +204,9 @@ const AdminUserSelector = ({ onUserSelect, currentViewingUserId }) => {
             ) : (
                 <div className="max-h-64 overflow-y-auto space-y-2">
                     {filteredUsers.length === 0 ? (
-                        <p className="text-gray-400 text-center py-4">No users found</p>
+                        <p className="text-gray-400 text-center py-4">
+                            {allUsers.length === 0 ? 'No users found. Click "Refresh Users" to try again.' : 'No users match your search.'}
+                        </p>
                     ) : (
                         filteredUsers.map((user) => (
                             <button

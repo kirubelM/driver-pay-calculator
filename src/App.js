@@ -4,9 +4,10 @@ import { LogOut, RefreshCw } from 'lucide-react';
 import LoginPage from './components/LoginPage';
 import DriverPayCalculator from './components/DriverPayCalculator';
 import AdminUserSelector from './components/AdminUserSelector';
+import AdminDebugPanel from './components/AdminDebugPanel';
 
 // Import Firebase Auth
-import { auth, db } from './firebaseConfig';
+import { auth } from './firebaseConfig';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { isCurrentUserAdmin } from './utils/adminConfig';
 
@@ -18,24 +19,26 @@ function App() {
 
     // Listen for authentication state changes
     useEffect(() => {
+        console.log('🔄 Setting up auth listener...');
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            console.log('👤 Auth state changed:', currentUser?.email || 'No user');
             setUser(currentUser);
             setIsCheckingAuth(false);
             
             if (currentUser) {
-                console.log('User is signed in:', currentUser.email);
+                console.log('✅ User is signed in:', currentUser.email);
                 
                 // Set viewing user ID to current user by default
                 setViewingUserId(currentUser.uid);
                 
-                // Wait a moment for auth.currentUser to be fully ready
+                // Check admin status
                 setTimeout(() => {
                     const adminStatus = isCurrentUserAdmin(auth);
+                    console.log('👮 Admin check result:', adminStatus, 'for', currentUser.email);
                     setIsAdmin(adminStatus);
-                    console.log('Is admin?', adminStatus);
                 }, 100);
             } else {
-                console.log('User is signed out');
+                console.log('❌ User is signed out');
                 setViewingUserId(null);
                 setIsAdmin(false);
             }
@@ -48,11 +51,16 @@ function App() {
     const handleLogout = async () => {
         try {
             await signOut(auth);
-            console.log('User signed out successfully');
+            console.log('👋 User signed out successfully');
         } catch (error) {
-            console.error('Error signing out:', error);
+            console.error('❌ Error signing out:', error);
             alert('Failed to sign out. Please try again.');
         }
+    };
+
+    const handleUserSelect = (selectedUserId) => {
+        console.log('🔀 Switching view to user:', selectedUserId);
+        setViewingUserId(selectedUserId);
     };
 
     // Show loading screen while checking authentication
@@ -74,7 +82,7 @@ function App() {
 
     // Show main app if authenticated
     return (
-        <div className="relative">
+        <div className="relative min-h-screen bg-gradient-to-br from-slate-900 to-slate-900">
             {/* Logout Button - Fixed in top right */}
             <div className="fixed top-4 right-4 z-50">
                 <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-2 shadow-lg border border-white/10">
@@ -96,58 +104,15 @@ function App() {
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 py-8">
-                {/* ALWAYS SHOW DEBUG INFO - Temporary for debugging */}
-                <div className="mb-6 p-4 bg-yellow-900/40 rounded-lg border border-yellow-500">
-                    <h3 className="text-white font-bold mb-2">🐛 Debug Info</h3>
-                    <p className="text-gray-300 text-sm">Admin status: {isAdmin ? '✅ TRUE' : '❌ FALSE'}</p>
-                    <p className="text-gray-300 text-sm">User email: {user.email}</p>
-                    
-                    <button
-                        onClick={async () => {
-                            console.log('🧪 Debug button clicked!');
-                            alert('Button clicked! Check console...');
-                            
-                            try {
-                                console.log('Attempting to access Firestore...');
-                                const { collection, getDocs } = await import('firebase/firestore');
-                                console.log('Firestore imports successful');
-                                
-                                const usersRef = collection(db, 'users');
-                                console.log('Users ref created:', usersRef);
-                                
-                                console.log('Fetching documents...');
-                                const snapshot = await getDocs(usersRef);
-                                
-                                console.log('=== DIRECT FIREBASE TEST ===');
-                                console.log('Total docs:', snapshot.size);
-                                console.log('Empty?', snapshot.empty);
-                                
-                                snapshot.forEach(doc => {
-                                    console.log('Doc ID:', doc.id);
-                                    console.log('Doc exists:', doc.exists());
-                                });
-                                
-                                alert(`Found ${snapshot.size} users. Check console for details.`);
-                            } catch (error) {
-                                console.error('❌ Direct test error:', error);
-                                console.error('Error code:', error.code);
-                                console.error('Error message:', error.message);
-                                alert('Error: ' + error.message);
-                            }
-                        }}
-                        className="mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg"
-                    >
-                        🧪 Test Direct Firebase Access
-                    </button>
-                </div>
-
-                {/* Admin User Selector - Only visible to admins */}
+            <div className="container mx-auto px-4 py-8 pt-20">
+                {/* Admin Panel Section */}
                 {isAdmin && (
-                    <AdminUserSelector 
-                        onUserSelect={setViewingUserId}
-                        currentViewingUserId={viewingUserId}
-                    />
+                    <div className="mb-8">
+                        <AdminUserSelector 
+                            onUserSelect={handleUserSelect}
+                            currentViewingUserId={viewingUserId}
+                        />
+                    </div>
                 )}
 
                 {/* Main Calculator Component */}

@@ -3,6 +3,9 @@
 /**
  * Hardcoded list of admin email addresses
  * Add or remove emails here to manage admin access
+ * 
+ * IMPORTANT: Make sure emails are in lowercase and exactly match
+ * the email addresses used in Firebase Authentication
  */
 const ADMIN_EMAILS = [
     'admin@bba.com',
@@ -17,9 +20,20 @@ const ADMIN_EMAILS = [
  * @returns {boolean} - True if user is an admin
  */
 export const isAdmin = (email) => {
-    if (!email) return false;
-    const result = ADMIN_EMAILS.includes(email.toLowerCase().trim());
-    console.log('🔍 isAdmin check:', email, '→', result);
+    if (!email) {
+        console.log('🔍 isAdmin: No email provided');
+        return false;
+    }
+    
+    const normalizedEmail = email.toLowerCase().trim();
+    const result = ADMIN_EMAILS.includes(normalizedEmail);
+    
+    console.log('🔍 isAdmin check:');
+    console.log('   Input email:', email);
+    console.log('   Normalized:', normalizedEmail);
+    console.log('   Admin emails:', ADMIN_EMAILS);
+    console.log('   Result:', result);
+    
     return result;
 };
 
@@ -29,7 +43,9 @@ export const isAdmin = (email) => {
  * @returns {string|null} - User's email or null
  */
 export const getCurrentUserEmail = (auth) => {
-    return auth.currentUser?.email || null;
+    const email = auth.currentUser?.email || null;
+    console.log('📧 getCurrentUserEmail:', email);
+    return email;
 };
 
 /**
@@ -40,7 +56,11 @@ export const getCurrentUserEmail = (auth) => {
 export const isCurrentUserAdmin = (auth) => {
     const email = getCurrentUserEmail(auth);
     const adminStatus = isAdmin(email);
-    console.log('✅ isCurrentUserAdmin:', email, '→', adminStatus);
+    
+    console.log('✅ isCurrentUserAdmin:');
+    console.log('   Email:', email);
+    console.log('   Is Admin:', adminStatus);
+    
     return adminStatus;
 };
 
