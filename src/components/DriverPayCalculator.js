@@ -60,9 +60,9 @@ const DriverPayCalculator = ({ viewingUserId }) => {
     const userId = viewingUserId || auth.currentUser?.uid;  // Use prop if available
 
     // Helper function to get user-specific document paths
-    const getUserDocPath = (docType) => {
-        return `users/${userId}/${docType}`;
-    };
+    // const getUserDocPath = (docType) => {
+    //     return `users/${userId}/${docType}`;
+    // };
 
     // Function to save current driver data to Firebase (user-specific)
     const saveCurrentDataToFirebase = useCallback(async (dataToSave, currentPayResults, currentTotalPay) => {

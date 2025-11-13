@@ -64,9 +64,12 @@ export const isCurrentUserAdmin = (auth) => {
     return adminStatus;
 };
 
-export default {
+
+const adminConfig = {
     ADMIN_EMAILS,
     isAdmin,
     getCurrentUserEmail,
     isCurrentUserAdmin
 };
+
+export default adminConfig;

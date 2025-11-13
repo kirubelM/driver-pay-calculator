@@ -33,6 +33,7 @@ const AdminDebugPanel = () => {
             addDebugResult('Firestore Access', 'info', 'Testing basic Firestore access...');
             try {
                 const testRef = collection(db, 'users');
+                console.log('🔍 Firestore test reference:', testRef);
                 addDebugResult('Firestore Access', 'success', 'Can create Firestore reference');
             } catch (err) {
                 addDebugResult('Firestore Access', 'error', `Cannot access Firestore: ${err.message}`);
