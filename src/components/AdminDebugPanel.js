@@ -20,20 +20,21 @@ const AdminDebugPanel = () => {
             // Test 1: Check authentication
             addDebugResult('Authentication', 'info', 'Checking current user...');
             const user = auth.currentUser;
-            
+
             if (!user) {
                 addDebugResult('Authentication', 'error', 'No user logged in!');
                 setIsRunning(false);
                 return;
             }
-            
+
             addDebugResult('Authentication', 'success', `Logged in as: ${user.email}`, { uid: user.uid });
 
             // Test 2: Check if we can access Firestore at all
             addDebugResult('Firestore Access', 'info', 'Testing basic Firestore access...');
             try {
                 const testRef = collection(db, 'users');
-                console.log('🔍 Firestore test reference:', testRef);
+                 console.log('🔍 Firestore test reference:', testRef);
+
                 addDebugResult('Firestore Access', 'success', 'Can create Firestore reference');
             } catch (err) {
                 addDebugResult('Firestore Access', 'error', `Cannot access Firestore: ${err.message}`);
@@ -63,15 +64,15 @@ const AdminDebugPanel = () => {
                         if (currentDataSnap.exists()) {
                             const data = currentDataSnap.data();
                             addDebugResult(
-                                `User: ${userId.substring(0, 8)}...`, 
-                                'success', 
+                                `User: ${userId.substring(0, 8)}...`,
+                                'success',
                                 `Has currentData with email: ${data.userEmail || 'No email'}`,
                                 { hasEmail: !!data.userEmail, email: data.userEmail }
                             );
                         } else {
                             addDebugResult(
-                                `User: ${userId.substring(0, 8)}...`, 
-                                'warning', 
+                                `User: ${userId.substring(0, 8)}...`,
+                                'warning',
                                 'No currentData found, checking history...'
                             );
 
@@ -82,23 +83,23 @@ const AdminDebugPanel = () => {
                             if (!historySnap.empty) {
                                 const firstDoc = historySnap.docs[0].data();
                                 addDebugResult(
-                                    `User: ${userId.substring(0, 8)}...`, 
-                                    'warning', 
+                                    `User: ${userId.substring(0, 8)}...`,
+                                    'warning',
                                     `Found email in history: ${firstDoc.userEmail || 'No email'}`,
                                     { source: 'history', email: firstDoc.userEmail }
                                 );
                             } else {
                                 addDebugResult(
-                                    `User: ${userId.substring(0, 8)}...`, 
-                                    'warning', 
+                                    `User: ${userId.substring(0, 8)}...`,
+                                    'warning',
                                     'No data found anywhere for this user'
                                 );
                             }
                         }
                     } catch (userErr) {
                         addDebugResult(
-                            `User: ${userId.substring(0, 8)}...`, 
-                            'error', 
+                            `User: ${userId.substring(0, 8)}...`,
+                            'error',
                             `Error accessing user data: ${userErr.message}`,
                             { code: userErr.code }
                         );
@@ -157,7 +158,7 @@ const AdminDebugPanel = () => {
 
     return (
         <div className="mb-8 bg-purple-900/40 backdrop-blur-lg rounded-2xl p-6 border-2 border-purple-500/50 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
+            {/* <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                     <Database className="w-6 h-6 text-purple-400 mr-3" />
                     <h2 className="text-2xl font-bold text-white">Admin Diagnostics Panel</h2>
@@ -213,7 +214,7 @@ const AdminDebugPanel = () => {
             <div className="mt-6 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
                 <h3 className="font-semibold text-blue-300 mb-2">📋 Required Firestore Rules for Admin Access:</h3>
                 <pre className="text-xs bg-black/30 p-3 rounded overflow-x-auto text-blue-200">
-{`rules_version = '2';
+                    {`rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
@@ -242,7 +243,7 @@ service cloud.firestore {
                 <p className="text-xs text-blue-300 mt-2">
                     ⚠️ Go to Firebase Console → Firestore Database → Rules and paste these rules
                 </p>
-            </div>
+            </div> */}
         </div>
     );
 };
