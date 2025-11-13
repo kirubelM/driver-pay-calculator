@@ -4,7 +4,7 @@ import { LogOut, RefreshCw } from 'lucide-react';
 import LoginPage from './components/LoginPage';
 import DriverPayCalculator from './components/DriverPayCalculator';
 import AdminUserSelector from './components/AdminUserSelector';
-import AdminDebugPanel from './components/AdminDebugPanel';
+// import AdminDebugPanel from './components/AdminDebugPanel';
 
 // Import Firebase Auth
 import { auth } from './firebaseConfig';
@@ -103,7 +103,7 @@ function App() {
                     </button>
                 </div>
             </div>
-                        <div><AdminDebugPanel/><p>Checker</p></div>
+                        {/* <div><AdminDebugPanel/><p>Checker</p></div> */}
             <div className="container mx-auto px-4 py-8 pt-20">
                 {/* Admin Panel Section */}
                 {isAdmin && (

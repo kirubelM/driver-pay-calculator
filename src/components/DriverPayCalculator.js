@@ -23,7 +23,7 @@ const defaultDriverData = {
     "Adisu"   : { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
     "Barnabas": { dailyRate: 220, hourlyRate: 22, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "" },
     "Birhanu" : { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Daniel"  : { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "" },
+    "Daniel"  : { dailyRate: 242, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "" },
     "Eshetu"  : { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
     "Eyouel"  : { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
     "Kaleab"  : { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
