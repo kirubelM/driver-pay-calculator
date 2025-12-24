@@ -20,7 +20,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 const defaultDriverData = {
-    "Adisu"   : { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Adisu"   : { dailyRate: 200, hourlyRate: 20, daysWorked: 9, hoursWorked: 0, expense1099: 0, comments: "-" },
     "Barnabas": { dailyRate: 220, hourlyRate: 22, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "" },
     "Birhanu" : { dailyRate: 200, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
     "Daniel"  : { dailyRate: 242, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "" },
@@ -32,9 +32,9 @@ const defaultDriverData = {
     "Mussie"  : { dailyRate: 220, hourlyRate: 22, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
     "Semira"  : { dailyRate: 140, hourlyRate: 20, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
     "Tekle"   : { dailyRate: 264, hourlyRate: 22, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Yared"   : { dailyRate: 220, hourlyRate: 20, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Yared"   : { dailyRate: 242, hourlyRate: 22, daysWorked: 8, hoursWorked: 0, expense1099: 0, comments: "-" },
     "Yordanos": { dailyRate: 250, hourlyRate: 0, daysWorked: 12, hoursWorked: 0, expense1099: 0, comments: "-" },
-    "Zekarias": { dailyRate: 220, hourlyRate: 20, daysWorked: 10, hoursWorked: 0, expense1099: 0, comments: "-" },
+    "Zekarias": { dailyRate: 242, hourlyRate: 22, daysWorked: 9, hoursWorked: 0, expense1099: 0, comments: "-" },
 };
 
 const DriverPayCalculator = ({ viewingUserId }) => {
@@ -809,10 +809,10 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                         <tr className="border-b border-white/20">
                                             <th className="text-left py-3 px-4 font-semibold text-gray-300">Driver</th>
                                             <th className="text-left py-3 px-4 font-semibold text-gray-300">Daily Pay</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-300">Hourly Pay</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-300">Regular Pay</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-300">1099 Expense</th>
+                                            <th className="text-left py-3 px-4 font-semibold text-gray-300">Extra Hour Pay</th>
                                             <th className="text-left py-3 px-4 font-semibold text-gray-300">Total Pay</th>
+                                            <th className="text-left py-3 px-4 font-semibold text-gray-300">1099 Expense</th>
+                                            <th className="text-left py-3 px-4 font-semibold text-gray-300">Total + 1099</th>
                                             <th className="text-left py-3 px-4 font-semibold text-gray-300">Notes</th>
                                         </tr>
                                     </thead>
@@ -898,7 +898,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                             <p><strong>Total Drivers:</strong> {loadedArchiveDetails.numberOfDrivers}</p>
                             <p><strong>Total Payroll Amount:</strong> ${loadedArchiveDetails.totalPay ? loadedArchiveDetails.totalPay.toFixed(2) : '0.00'}</p>
                             <p><strong>Total Daily Pay:</strong> ${loadedArchiveDetails.totalDailyPay ? loadedArchiveDetails.totalDailyPay.toFixed(2) : '0.00'}</p>
-                            <p><strong>Total Hourly Pay:</strong> ${loadedArchiveDetails.totalHourlyPay ? loadedArchiveDetails.totalHourlyPay.toFixed(2) : '0.00'}</p>
+                            <p><strong>Total Extra hour Pay:</strong> ${loadedArchiveDetails.totalHourlyPay ? loadedArchiveDetails.totalHourlyPay.toFixed(2) : '0.00'}</p>
                             <p><strong>Total 1099 Expense:</strong> ${loadedArchiveDetails.total1099Expense ? loadedArchiveDetails.total1099Expense.toFixed(2) : '0.00'}</p>
                             <p className="mt-2"><strong>Weekly Notes:</strong> {loadedArchiveDetails.weeklyNotes}</p>
                         </div>

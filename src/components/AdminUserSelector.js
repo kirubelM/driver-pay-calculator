@@ -165,6 +165,28 @@ const AdminUserSelector = ({ onUserSelect, currentViewingUserId }) => {
                 </div>
             )}
 
+            {/* Zero Users Warning */}
+            {allUsers.length === 0 && !isLoading && (
+                <div className="mb-4 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                    <div className="flex items-start mb-2">
+                        <AlertCircle className="w-5 h-5 text-yellow-400 mr-2 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-yellow-200 font-semibold mb-1">⚠️ No Users Found</p>
+                            <p className="text-yellow-200 text-sm mb-2">This usually means Firestore security rules are blocking admin access.</p>
+                        </div>
+                    </div>
+                    <div className="bg-black/30 p-3 rounded text-xs text-yellow-100">
+                        <p className="font-semibold mb-1">Quick Fix:</p>
+                        <ol className="list-decimal list-inside space-y-1">
+                            <li>Go to Firebase Console → Firestore Database → Rules</li>
+                            <li>Add admin email check to your rules (see debug panel below)</li>
+                            <li>Click "Publish" and wait 30 seconds</li>
+                            <li>Refresh this page</li>
+                        </ol>
+                    </div>
+                </div>
+            )}
+
             {/* Error Message */}
             {error && (
                 <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg flex items-start">

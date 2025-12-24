@@ -4,7 +4,7 @@ import { LogOut, RefreshCw } from 'lucide-react';
 import LoginPage from './components/LoginPage';
 import DriverPayCalculator from './components/DriverPayCalculator';
 import AdminUserSelector from './components/AdminUserSelector';
-// import AdminDebugPanel from './components/AdminDebugPanel';
+import AdminDebugPanel from './components/AdminDebugPanel';
 
 // Import Firebase Auth
 import { auth } from './firebaseConfig';
@@ -103,8 +103,23 @@ function App() {
                     </button>
                 </div>
             </div>
-                        {/* <div><AdminDebugPanel/><p>Checker</p></div> */}
+
             <div className="container mx-auto px-4 py-8 pt-20">
+                {/* Simple Admin Status Display */}
+                {isAdmin && (
+                    <div className="mb-4 p-4 bg-green-500/20 border-2 border-green-500 rounded-lg">
+                        <h2 className="text-white text-xl font-bold">✅ ADMIN MODE ACTIVE</h2>
+                        <p className="text-green-200 text-sm">You are logged in as an administrator</p>
+                    </div>
+                )}
+
+                {/* Admin Debug Panel - Only for admins */}
+                {isAdmin && (
+                    <div className="mb-8">
+                        <AdminDebugPanel />
+                    </div>
+                )}
+
                 {/* Admin Panel Section */}
                 {isAdmin && (
                     <div className="mb-8">
