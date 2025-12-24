@@ -774,7 +774,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                                     onChange={(e) => handleDriverDataChange(driverName, 'expense1099', e.target.value)}
                                                     className="w-28 px-2 py-1 bg-white/10 border border-white/20 rounded text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     min="0"
-                                                    step="0.01"
+                                                    step="1"
                                                 />
                                             </td>
                                             <td className="py-3 px-4">
