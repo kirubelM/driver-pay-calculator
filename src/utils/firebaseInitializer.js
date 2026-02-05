@@ -16,9 +16,9 @@ const defaultDriverData = {
   "Mulugeta": { dailyRate: 220, hourlyRate: 22, daysWorked: 0, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Mussie": { dailyRate: 220, hourlyRate: 22, daysWorked: 0, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Semira": { dailyRate: 140, hourlyRate: 20, daysWorked: 0, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Tekle": { dailyRate: 264, hourlyRate: 22, daysWorked: 0, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Tekle": { dailyRate: 276, hourlyRate: 23, daysWorked: 0, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Yared": { dailyRate: 242, hourlyRate: 22, daysWorked: 0, hoursWorked: 0, expense1099: 0, comments: "-" },
-  "Yordanos": { dailyRate: 250, hourlyRate: 0, daysWorked: 0, hoursWorked: 0, expense1099: 0, comments: "-" },
+  "Yordanos": { dailyRate: 250, hourlyRate: 25, daysWorked: 0, hoursWorked: 0, expense1099: 0, comments: "-" },
   "Zekarias": { dailyRate: 242, hourlyRate: 22, daysWorked: 0, hoursWorked: 0, expense1099: 0, comments: "-" }
 };
 
