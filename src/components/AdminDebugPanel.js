@@ -33,6 +33,7 @@ const AdminDebugPanel = () => {
             // Get the ID token to check claims
             try {
                 const token = await user.getIdToken();
+                console.log('🔑 ID Token:', token);
                 const tokenResult = await user.getIdTokenResult();
                 results.push(`✅ Token retrieved successfully`);
                 results.push(`   Token claims email: ${tokenResult.claims.email}`);
