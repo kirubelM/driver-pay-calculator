@@ -214,6 +214,13 @@ const DriverPayCalculator = ({ viewingUserId }) => {
         });
     };
 
+    const saveRateChanges = async () => {
+        const saveSuccess = await saveCurrentDataToFirebase(driverData, payResults, totalPay);
+        if (saveSuccess) {
+            alert("Rate changes saved successfully!");
+        }
+    };
+
     const calculateAndSaveCurrentPayroll = useCallback(async () => {
         setIsCalculating(true);
 
@@ -680,10 +687,29 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                                     className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
                                             </div>
+                                            <div>
+                                                <label className="block text-sm text-gray-300 mb-1">Hourly Rate ($)</label>
+                                                <input
+                                                    type="number"
+                                                    value={data.hourlyRate}
+                                                    onChange={(e) => handleRateChange(driverName, 'hourlyRate', e.target.value)}
+                                                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 );
                             })}
+                        </div>
+                        
+                        <div className="mt-6 text-center">
+                            <button
+                                onClick={saveRateChanges}
+                                className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-500 hover:to-purple-500 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                            >
+                                <Save className="w-5 h-5 mr-2" />
+                                Save Rate Changes
+                            </button>
                         </div>
                     </div>
                 )}
