@@ -1,6 +1,6 @@
 // src/components/DriverPayCalculator.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp, Save, XCircle } from 'lucide-react';
+import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp, Save, XCircle, BarChart3, Award, Activity } from 'lucide-react';
 import BBA_LOGO from '../img/as.png';
 
 // Import Firebase
@@ -56,13 +56,12 @@ const DriverPayCalculator = ({ viewingUserId }) => {
     const [periodEndDate, setPeriodEndDate] = useState(null);
     const [tempWeeklyNotes, setTempWeeklyNotes] = useState("");
 
-    // Get current user ID
-    const userId = viewingUserId || auth.currentUser?.uid;  // Use prop if available
+    // Dashboard data
+    const [historicalData, setHistoricalData] = useState([]);
+    const [showDashboard, setShowDashboard] = useState(false);
 
-    // Helper function to get user-specific document paths
-    // const getUserDocPath = (docType) => {
-    //     return `users/${userId}/${docType}`;
-    // };
+    // Get current user ID
+    const userId = viewingUserId || auth.currentUser?.uid;
 
     // Function to save current driver data to Firebase (user-specific)
     const saveCurrentDataToFirebase = useCallback(async (dataToSave, currentPayResults, currentTotalPay) => {
@@ -111,10 +110,14 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                 return {
                     id: doc.id,
                     displayDate: displayString || 'N/A Date',
-                    archiveTimestamp: data.archiveTimestamp
+                    archiveTimestamp: data.archiveTimestamp,
+                    totalPay: data.totalPay || 0,
+                    numberOfDrivers: data.numberOfDrivers || 0,
+                    periodEndDate: data.periodEndDate
                 };
             });
             setArchivedWeeks(weeks);
+            setHistoricalData(weeks.slice(0, 6)); // Last 6 weeks for charts
             if (weeks.length > 0 && !selectedArchiveId) {
                 setSelectedArchiveId(weeks[0].id);
             }
@@ -214,6 +217,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
         });
     };
 
+    // Function to save rate changes
     const saveRateChanges = async () => {
         const saveSuccess = await saveCurrentDataToFirebase(driverData, payResults, totalPay);
         if (saveSuccess) {
@@ -510,6 +514,20 @@ const DriverPayCalculator = ({ viewingUserId }) => {
         }
     }, [driverData, tempWeeklyNotes, payDate, periodStartDate, periodEndDate, userId, saveCurrentDataToFirebase, fetchArchivedWeeksList]);
 
+    // Calculate dashboard stats
+    const getDashboardStats = () => {
+        const activeDrivers = payResults.length > 0 ? payResults.filter(r => r.totalPay > 0).length : Object.keys(driverData).length;
+        const avgPay = payResults.length > 0 ? totalPay / payResults.filter(r => r.totalPay > 0).length : 0;
+        const topEarner = payResults.length > 0 ? payResults.reduce((max, r) => r.totalPay > max.totalPay ? r : max, payResults[0]) : null;
+        
+        return {
+            activeDrivers,
+            avgPay: isNaN(avgPay) ? 0 : avgPay,
+            topEarner: topEarner?.name || 'N/A',
+            topEarnerPay: topEarner?.totalPay || 0
+        };
+    };
+
     // Initial data load for 'currentData' on component mount (user-specific)
     useEffect(() => {
         const loadInitialData = async () => {
@@ -571,6 +589,8 @@ const DriverPayCalculator = ({ viewingUserId }) => {
         return Object.keys(driverData).sort((a, b) => a.localeCompare(b));
     };
 
+    const stats = getDashboardStats();
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-900">
             {/* Animated background */}
@@ -595,6 +615,150 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                         </div>
                     )}
                 </div>
+
+                {/* Dashboard Toggle */}
+                <div className="flex justify-center mb-6">
+                    <button
+                        // onClick={() => setShowDashboard(!showDashboard)}
+                        onClick={() => setShowDashboard(false)}
+                        className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-lg hover:from-blue-500 hover:to-purple-500 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                    >
+                        <BarChart3 className="w-5 h-5 mr-2" />
+                        {showDashboard ? 'Hide Dashboard' : 'Show Dashboard'}
+                    </button>
+                </div>
+
+                {/* Dashboard Stats */}
+                {showDashboard && (
+                    <div className="mb-8">
+                        {/* Quick Stats Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            {/* Total Payroll Card */}
+                            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:-translate-y-1">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="p-3 bg-blue-500/20 rounded-xl">
+                                        <DollarSign className="w-6 h-6 text-blue-400" />
+                                    </div>
+                                    <TrendingUp className="w-5 h-5 text-green-400" />
+                                </div>
+                                <h3 className="text-gray-400 text-sm font-medium mb-1">Total Payroll</h3>
+                                <p className="text-3xl font-bold text-white">${totalPay.toFixed(2)}</p>
+                                <p className="text-xs text-gray-500 mt-2">Current period</p>
+                            </div>
+
+                            {/* Active Drivers Card */}
+                            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 hover:-translate-y-1">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="p-3 bg-purple-500/20 rounded-xl">
+                                        <Users className="w-6 h-6 text-purple-400" />
+                                    </div>
+                                    <Activity className="w-5 h-5 text-purple-400" />
+                                </div>
+                                <h3 className="text-gray-400 text-sm font-medium mb-1">Active Drivers</h3>
+                                <p className="text-3xl font-bold text-white">{stats.activeDrivers}</p>
+                                <p className="text-xs text-gray-500 mt-2">Total: {Object.keys(driverData).length}</p>
+                            </div>
+
+                            {/* Average Pay Card */}
+                            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl hover:shadow-pink-500/50 transition-all duration-300 hover:-translate-y-1">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="p-3 bg-pink-500/20 rounded-xl">
+                                        <TrendingUp className="w-6 h-6 text-pink-400" />
+                                    </div>
+                                    <BarChart3 className="w-5 h-5 text-pink-400" />
+                                </div>
+                                <h3 className="text-gray-400 text-sm font-medium mb-1">Average Pay</h3>
+                                <p className="text-3xl font-bold text-white">${stats.avgPay.toFixed(2)}</p>
+                                <p className="text-xs text-gray-500 mt-2">Per driver</p>
+                            </div>
+
+                            {/* Top Earner Card */}
+                            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 hover:-translate-y-1">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="p-3 bg-yellow-500/20 rounded-xl">
+                                        <Award className="w-6 h-6 text-yellow-400" />
+                                    </div>
+                                    <span className="text-2xl">🏆</span>
+                                </div>
+                                <h3 className="text-gray-400 text-sm font-medium mb-1">Top Earner</h3>
+                                <p className="text-xl font-bold text-white truncate">{stats.topEarner}</p>
+                                <p className="text-sm text-blue-400 mt-1">${stats.topEarnerPay.toFixed(2)}</p>
+                            </div>
+                        </div>
+
+                        {/* Charts Section */}
+                        {historicalData.length > 0 && (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                {/* Payroll Trend Chart */}
+                                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
+                                    <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                                        <TrendingUp className="w-5 h-5 mr-2 text-blue-400" />
+                                        Payroll Trend (Last 6 Weeks)
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {historicalData.slice().reverse().map((week, index) => {
+                                            const maxPay = Math.max(...historicalData.map(w => w.totalPay));
+                                            const percentage = (week.totalPay / maxPay) * 100;
+                                            return (
+                                                <div key={week.id}>
+                                                    <div className="flex justify-between text-sm mb-1">
+                                                        <span className="text-gray-400">{week.periodEndDate || `Week ${index + 1}`}</span>
+                                                        <span className="text-blue-400 font-semibold">${week.totalPay.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
+                                                            style={{ width: `${percentage}%` }}
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Driver Comparison Chart */}
+                                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
+                                    <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                                        <BarChart3 className="w-5 h-5 mr-2 text-purple-400" />
+                                        Top 5 Drivers (Current Period)
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {payResults
+                                            .sort((a, b) => b.totalPay - a.totalPay)
+                                            .slice(0, 5)
+                                            .map((driver, index) => {
+                                                const maxPay = payResults.length > 0 ? Math.max(...payResults.map(d => d.totalPay)) : 1;
+                                                const percentage = (driver.totalPay / maxPay) * 100;
+                                                return (
+                                                    <div key={driver.name}>
+                                                        <div className="flex justify-between text-sm mb-1">
+                                                            <span className="text-gray-400 flex items-center">
+                                                                {index === 0 && <Award className="w-4 h-4 mr-1 text-yellow-400" />}
+                                                                {driver.name}
+                                                            </span>
+                                                            <span className="text-purple-400 font-semibold">${driver.totalPay.toFixed(2)}</span>
+                                                        </div>
+                                                        <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                                                            <div 
+                                                                className="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
+                                                                style={{ width: `${percentage}%` }}
+                                                            ></div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        {payResults.length === 0 && (
+                                            <div className="text-center text-gray-500 py-8">
+                                                Calculate payroll to see driver comparison
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Controls */}
                 <div className="flex flex-wrap justify-center gap-4 mb-8">
@@ -702,6 +866,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                             })}
                         </div>
                         
+                        {/* Save Rate Changes Button */}
                         <div className="mt-6 text-center">
                             <button
                                 onClick={saveRateChanges}
@@ -896,9 +1061,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                 <>
                                     <option value="">-- Select a Past Week --</option>
                                     {archivedWeeks.map(week => (
-                                        <option key={week.id} value={week.id}>{week.displayDate}
-                                            {/* ({week.id}) */}
-                                        </option>
+                                        <option key={week.id} value={week.id}>{week.displayDate}</option>
                                     ))}
                                 </>
                             )}
