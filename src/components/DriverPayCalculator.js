@@ -1,6 +1,6 @@
 // src/components/DriverPayCalculator.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp, Save, XCircle, BarChart3, Award, Activity } from 'lucide-react';
+import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp, Save, XCircle, BarChart3, Award, Activity, TrendingDown, Minus } from 'lucide-react';
 import BBA_LOGO from '../img/as.png';
 
 // Import Firebase
@@ -59,6 +59,10 @@ const DriverPayCalculator = ({ viewingUserId }) => {
     // Dashboard data
     const [historicalData, setHistoricalData] = useState([]);
     const [showDashboard, setShowDashboard] = useState(false);
+    const [chartType, setChartType] = useState('line'); // 'line', 'bar', 'combo', 'sparkline'
+    const [dashboardStartDate, setDashboardStartDate] = useState(null);
+    const [dashboardEndDate, setDashboardEndDate] = useState(null);
+    const [filteredHistoricalData, setFilteredHistoricalData] = useState([]);
 
     // Get current user ID
     const userId = viewingUserId || auth.currentUser?.uid;
@@ -528,6 +532,397 @@ const DriverPayCalculator = ({ viewingUserId }) => {
         };
     };
 
+    // Calculate trend metrics
+    const getTrendMetrics = () => {
+        const dataToUse = filteredHistoricalData.length > 0 ? filteredHistoricalData : historicalData;
+        if (dataToUse.length < 2) return null;
+        
+        const reversedData = [...dataToUse].reverse();
+        const average = reversedData.reduce((sum, w) => sum + w.totalPay, 0) / reversedData.length;
+        const highest = reversedData.reduce((max, w) => w.totalPay > max.totalPay ? w : max, reversedData[0]);
+        const lowest = reversedData.reduce((min, w) => w.totalPay < min.totalPay ? w : min, reversedData[0]);
+        
+        // Calculate trend (up, down, stable)
+        const lastTwo = reversedData.slice(-2);
+        let trend = 'stable';
+        let trendPercent = 0;
+        if (lastTwo.length === 2) {
+            const diff = lastTwo[1].totalPay - lastTwo[0].totalPay;
+            trendPercent = lastTwo[0].totalPay > 0 ? (diff / lastTwo[0].totalPay) * 100 : 0;
+            if (Math.abs(trendPercent) > 2) {
+                trend = trendPercent > 0 ? 'up' : 'down';
+            }
+        }
+        
+        return { average, highest, lowest, trend, trendPercent };
+    };
+
+    // Render different chart types
+    const renderChart = () => {
+        const dataToUse = filteredHistoricalData.length > 0 ? filteredHistoricalData : historicalData;
+        const reversedData = [...dataToUse].reverse();
+        const maxPay = Math.max(...reversedData.map(w => w.totalPay));
+        const metrics = getTrendMetrics();
+        
+        if (chartType === 'line') {
+            return (
+                <div>
+                    <div className="relative" style={{height: '16rem'}}>
+                        {/* Average line */}
+                        {metrics && (
+                            <div 
+                                className="absolute w-full border-t-2 border-dashed border-yellow-500/50"
+                                style={{ bottom: `${(metrics.average / maxPay) * 100}%` }}
+                            >
+                                <span className="absolute -top-3 right-0 text-xs text-yellow-400">Avg: ${metrics.average.toFixed(2)}</span>
+                            </div>
+                        )}
+                        
+                        {/* SVG Line Chart */}
+                        <svg className="w-full h-full" viewBox="0 0 600 250" preserveAspectRatio="none">
+                            {/* Grid lines */}
+                            {[0, 25, 50, 75, 100].map(percent => (
+                                <line 
+                                    key={percent}
+                                    x1="0" 
+                                    y1={250 - (percent * 2.5)} 
+                                    x2="600" 
+                                    y2={250 - (percent * 2.5)}
+                                    stroke="rgba(255,255,255,0.1)" 
+                                    strokeWidth="1"
+                                />
+                            ))}
+                            
+                            {/* Line path */}
+                            <polyline
+                                points={reversedData.map((week, index) => {
+                                    const x = (index / (reversedData.length - 1)) * 600;
+                                    const y = 250 - ((week.totalPay / maxPay) * 230);
+                                    return `${x},${y}`;
+                                }).join(' ')}
+                                fill="none"
+                                stroke="url(#lineGradient)"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                            />
+                            
+                            {/* Gradient definition */}
+                            <defs>
+                                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor="#3b82f6" />
+                                    <stop offset="100%" stopColor="#a855f7" />
+                                </linearGradient>
+                            </defs>
+                            
+                            {/* Data points */}
+                            {reversedData.map((week, index) => {
+                                const x = (index / (reversedData.length - 1)) * 600;
+                                const y = 250 - ((week.totalPay / maxPay) * 230);
+                                const isHighest = metrics && week.id === metrics.highest.id;
+                                const isLowest = metrics && week.id === metrics.lowest.id;
+                                
+                                return (
+                                    <g key={week.id}>
+                                        <circle
+                                            cx={x}
+                                            cy={y}
+                                            r={isHighest || isLowest ? "8" : "5"}
+                                            fill={isHighest ? "#fbbf24" : isLowest ? "#ef4444" : "#fff"}
+                                            stroke={isHighest ? "#fbbf24" : isLowest ? "#ef4444" : "#3b82f6"}
+                                            strokeWidth="2"
+                                        />
+                                    </g>
+                                );
+                            })}
+                        </svg>
+                    </div>
+                    
+                    {/* Labels with better spacing */}
+                    <div className="mt-4 px-2 pb-2">
+                        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${reversedData.length}, minmax(0, 1fr))` }}>
+                            {reversedData.map((week, index) => (
+                                <div key={week.id} className="flex flex-col items-center text-center min-w-0">
+                                    <div className="text-xs text-gray-400 truncate w-full px-1" title={week.periodEndDate}>
+                                        {week.periodEndDate ? new Date(week.periodEndDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : `W${index + 1}`}
+                                    </div>
+                                    <div className="text-sm text-blue-400 font-semibold mt-1">
+                                        ${(week.totalPay / 1000).toFixed(1)}k
+                                    </div>
+                                    {index > 0 && (
+                                        <div className="flex items-center justify-center mt-1">
+                                            {(() => {
+                                                const prevPay = reversedData[index - 1].totalPay;
+                                                const change = ((week.totalPay - prevPay) / prevPay) * 100;
+                                                if (change > 0) {
+                                                    return (
+                                                        <span className="text-green-400 flex items-center text-xs">
+                                                            <TrendingUp className="w-3 h-3" />
+                                                            <span className="ml-0.5">{change.toFixed(0)}%</span>
+                                                        </span>
+                                                    );
+                                                } else if (change < 0) {
+                                                    return (
+                                                        <span className="text-red-400 flex items-center text-xs">
+                                                            <TrendingDown className="w-3 h-3" />
+                                                            <span className="ml-0.5">{Math.abs(change).toFixed(0)}%</span>
+                                                        </span>
+                                                    );
+                                                } else {
+                                                    return (
+                                                        <span className="text-gray-400 flex items-center text-xs">
+                                                            <Minus className="w-3 h-3" />
+                                                            <span className="ml-0.5">0%</span>
+                                                        </span>
+                                                    );
+                                                }
+                                            })()}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+        if (chartType === 'bar') {
+            return (
+                <div className="space-y-3">
+                    {reversedData.map((week, index) => {
+                        const percentage = (week.totalPay / maxPay) * 100;
+                        const isHighest = metrics && week.id === metrics.highest.id;
+                        const isLowest = metrics && week.id === metrics.lowest.id;
+                        const prevPay = index > 0 ? reversedData[index - 1].totalPay : null;
+                        const change = prevPay ? ((week.totalPay - prevPay) / prevPay) * 100 : null;
+                        
+                        return (
+                            <div key={week.id}>
+                                <div className="flex justify-between text-sm mb-1">
+                                    <span className="text-gray-400 flex items-center gap-2">
+                                        {week.periodEndDate || `Week ${index + 1}`}
+                                        {isHighest && <span className="text-yellow-400">🏆 Highest</span>}
+                                        {isLowest && <span className="text-red-400">📉 Lowest</span>}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-blue-400 font-semibold">${week.totalPay.toFixed(2)}</span>
+                                        {change !== null && (
+                                            <span className={`text-xs flex items-center ${change > 0 ? 'text-green-400' : change < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                                                {change > 0 ? <TrendingUp className="w-3 h-3" /> : change < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                                                {Math.abs(change).toFixed(1)}%
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden relative">
+                                    <div 
+                                        className={`h-full rounded-full transition-all duration-500 ease-out ${
+                                            isHighest ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                                            isLowest ? 'bg-gradient-to-r from-red-500 to-pink-500' :
+                                            'bg-gradient-to-r from-blue-500 to-purple-500'
+                                        }`}
+                                        style={{ width: `${percentage}%` }}
+                                    ></div>
+                                    {/* Average marker */}
+                                    {metrics && (
+                                        <div 
+                                            className="absolute top-0 h-full w-0.5 bg-yellow-400"
+                                            style={{ left: `${(metrics.average / maxPay) * 100}%` }}
+                                        ></div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        }
+        
+        if (chartType === 'combo') {
+            return (
+                <div className="space-y-4">
+                    {/* Line chart on top */}
+                    <div className="relative h-32">
+                        <svg className="w-full h-full" viewBox="0 0 600 120" preserveAspectRatio="none">
+                            <polyline
+                                points={reversedData.map((week, index) => {
+                                    const x = (index / (reversedData.length - 1)) * 600;
+                                    const y = 120 - ((week.totalPay / maxPay) * 110);
+                                    return `${x},${y}`;
+                                }).join(' ')}
+                                fill="none"
+                                stroke="url(#comboGradient)"
+                                strokeWidth="2"
+                            />
+                            <defs>
+                                <linearGradient id="comboGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor="#3b82f6" />
+                                    <stop offset="100%" stopColor="#a855f7" />
+                                </linearGradient>
+                            </defs>
+                            {reversedData.map((week, index) => {
+                                const x = (index / (reversedData.length - 1)) * 600;
+                                const y = 120 - ((week.totalPay / maxPay) * 110);
+                                return <circle key={week.id} cx={x} cy={y} r="4" fill="#fff" />;
+                            })}
+                        </svg>
+                    </div>
+                    
+                    {/* Bars below */}
+                    <div className="grid grid-cols-6 gap-2">
+                        {reversedData.map((week, index) => {
+                            const percentage = (week.totalPay / maxPay) * 100;
+                            return (
+                                <div key={week.id} className="text-center">
+                                    <div className="h-16 flex items-end">
+                                        <div 
+                                            className="w-full bg-gradient-to-t from-blue-500 to-purple-500 rounded-t transition-all duration-500"
+                                            style={{ height: `${percentage}%` }}
+                                        ></div>
+                                    </div>
+                                    <div className="text-xs text-gray-400 mt-1">{week.periodEndDate?.split('-')[1] || `W${index + 1}`}</div>
+                                    <div className="text-xs text-blue-400">${(week.totalPay / 1000).toFixed(1)}k</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        }
+        
+        if (chartType === 'sparkline') {
+            return (
+                <div className="space-y-4">
+                    {/* Large sparkline */}
+                    <div className="relative h-24 flex items-center">
+                        <svg className="w-full h-full" viewBox="0 0 600 100" preserveAspectRatio="none">
+                            {/* Fill area */}
+                            <polygon
+                                points={reversedData.map((week, index) => {
+                                    const x = (index / (reversedData.length - 1)) * 600;
+                                    const y = 100 - ((week.totalPay / maxPay) * 90);
+                                    return `${x},${y}`;
+                                }).join(' ') + ' 600,100 0,100'}
+                                fill="url(#sparkGradient)"
+                                opacity="0.3"
+                            />
+                            
+                            {/* Line */}
+                            <polyline
+                                points={reversedData.map((week, index) => {
+                                    const x = (index / (reversedData.length - 1)) * 600;
+                                    const y = 100 - ((week.totalPay / maxPay) * 90);
+                                    return `${x},${y}`;
+                                }).join(' ')}
+                                fill="none"
+                                stroke="#3b82f6"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                            />
+                            
+                            <defs>
+                                <linearGradient id="sparkGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.5" />
+                                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                                </linearGradient>
+                            </defs>
+                            
+                            {/* Last point highlight */}
+                            {reversedData.length > 0 && (
+                                <circle
+                                    cx={600}
+                                    cy={100 - ((reversedData[reversedData.length - 1].totalPay / maxPay) * 90)}
+                                    r="6"
+                                    fill="#3b82f6"
+                                />
+                            )}
+                        </svg>
+                    </div>
+                    
+                    {/* Stats summary */}
+                    {metrics && (
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="text-center p-3 bg-white/5 rounded-lg">
+                                <div className="text-xs text-gray-400">Trend</div>
+                                <div className="flex items-center justify-center gap-1 text-lg font-bold">
+                                    {metrics.trend === 'up' ? (
+                                        <>
+                                            <TrendingUp className="w-5 h-5 text-green-400" />
+                                            <span className="text-green-400">+{metrics.trendPercent.toFixed(1)}%</span>
+                                        </>
+                                    ) : metrics.trend === 'down' ? (
+                                        <>
+                                            <TrendingDown className="w-5 h-5 text-red-400" />
+                                            <span className="text-red-400">{metrics.trendPercent.toFixed(1)}%</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Minus className="w-5 h-5 text-gray-400" />
+                                            <span className="text-gray-400">Stable</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="text-center p-3 bg-white/5 rounded-lg">
+                                <div className="text-xs text-gray-400">Average</div>
+                                <div className="text-lg font-bold text-yellow-400">${metrics.average.toFixed(2)}</div>
+                            </div>
+                            
+                            <div className="text-center p-3 bg-white/5 rounded-lg">
+                                <div className="text-xs text-gray-400">Range</div>
+                                <div className="text-sm font-bold text-blue-400">
+                                    ${metrics.lowest.totalPay.toFixed(0)} - ${metrics.highest.totalPay.toFixed(0)}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Week details */}
+                    <div className="grid grid-cols-6 gap-2 text-xs">
+                        {reversedData.map((week, index) => (
+                            <div key={week.id} className="text-center">
+                                <div className="text-gray-400">{week.periodEndDate?.split('-').slice(1).join('/') || `W${index + 1}`}</div>
+                                <div className="text-blue-400 font-semibold">${(week.totalPay / 1000).toFixed(1)}k</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+    };
+
+    // Filter historical data based on date range
+    useEffect(() => {
+        if (historicalData.length === 0) {
+            setFilteredHistoricalData([]);
+            return;
+        }
+
+        let filtered = [...historicalData];
+
+        if (dashboardStartDate || dashboardEndDate) {
+            filtered = filtered.filter(week => {
+                if (!week.periodEndDate) return true;
+                
+                const weekDate = new Date(week.periodEndDate);
+                const start = dashboardStartDate ? new Date(dashboardStartDate) : null;
+                const end = dashboardEndDate ? new Date(dashboardEndDate) : null;
+
+                if (start && end) {
+                    return weekDate >= start && weekDate <= end;
+                } else if (start) {
+                    return weekDate >= start;
+                } else if (end) {
+                    return weekDate <= end;
+                }
+                return true;
+            });
+        }
+
+        setFilteredHistoricalData(filtered.length > 0 ? filtered : historicalData);
+    }, [historicalData, dashboardStartDate, dashboardEndDate]);
+
     // Initial data load for 'currentData' on component mount (user-specific)
     useEffect(() => {
         const loadInitialData = async () => {
@@ -619,8 +1014,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                 {/* Dashboard Toggle */}
                 <div className="flex justify-center mb-6">
                     <button
-                        // onClick={() => setShowDashboard(!showDashboard)}
-                        onClick={() => setShowDashboard(false)}
+                        onClick={() => setShowDashboard(!showDashboard)}
                         className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-500 text-white rounded-lg hover:from-blue-500 hover:to-purple-500 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                     >
                         <BarChart3 className="w-5 h-5 mr-2" />
@@ -631,6 +1025,62 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                 {/* Dashboard Stats */}
                 {showDashboard && (
                     <div className="mb-8">
+                        {/* Date Range Filter */}
+                        <div className="mb-6 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 relative z-50">
+                            <div className="flex flex-wrap items-center gap-4">
+                                <span className="text-white font-medium">Filter by Date Range:</span>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-gray-300 text-sm">From:</label>
+                                    <div className="relative z-50">
+                                        <DatePicker
+                                            selected={dashboardStartDate}
+                                            onChange={(date) => setDashboardStartDate(date)}
+                                            selectsStart
+                                            startDate={dashboardStartDate}
+                                            endDate={dashboardEndDate}
+                                            className="px-3 py-2 rounded-lg bg-slate-800 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm w-36"
+                                            dateFormat="MM/dd/yyyy"
+                                            placeholderText="Start date"
+                                            isClearable
+                                            popperClassName="z-50"
+                                            popperPlacement="bottom-start"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <label className="text-gray-300 text-sm">To:</label>
+                                    <div className="relative z-50">
+                                        <DatePicker
+                                            selected={dashboardEndDate}
+                                            onChange={(date) => setDashboardEndDate(date)}
+                                            selectsEnd
+                                            startDate={dashboardStartDate}
+                                            endDate={dashboardEndDate}
+                                            minDate={dashboardStartDate}
+                                            className="px-3 py-2 rounded-lg bg-slate-800 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm w-36"
+                                            dateFormat="MM/dd/yyyy"
+                                            placeholderText="End date"
+                                            isClearable
+                                            popperClassName="z-50"
+                                            popperPlacement="bottom-start"
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setDashboardStartDate(null);
+                                        setDashboardEndDate(null);
+                                    }}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-all text-sm font-medium"
+                                >
+                                    Clear Filters
+                                </button>
+                                <div className="ml-auto text-sm text-gray-400">
+                                    Showing {filteredHistoricalData.length || historicalData.length} periods
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Quick Stats Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                             {/* Total Payroll Card */}
@@ -687,34 +1137,66 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                         </div>
 
                         {/* Charts Section */}
-                        {historicalData.length > 0 && (
+                        {(filteredHistoricalData.length > 0 || historicalData.length > 0) && (
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                                 {/* Payroll Trend Chart */}
                                 <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
-                                    <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-                                        <TrendingUp className="w-5 h-5 mr-2 text-blue-400" />
-                                        Payroll Trend (Last 6 Weeks)
-                                    </h3>
-                                    <div className="space-y-4">
-                                        {historicalData.slice().reverse().map((week, index) => {
-                                            const maxPay = Math.max(...historicalData.map(w => w.totalPay));
-                                            const percentage = (week.totalPay / maxPay) * 100;
-                                            return (
-                                                <div key={week.id}>
-                                                    <div className="flex justify-between text-sm mb-1">
-                                                        <span className="text-gray-400">{week.periodEndDate || `Week ${index + 1}`}</span>
-                                                        <span className="text-blue-400 font-semibold">${week.totalPay.toFixed(2)}</span>
-                                                    </div>
-                                                    <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
-                                                        <div 
-                                                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
-                                                            style={{ width: `${percentage}%` }}
-                                                        ></div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-xl font-bold text-white flex items-center">
+                                            <TrendingUp className="w-5 h-5 mr-2 text-blue-400" />
+                                            Payroll Trend ({filteredHistoricalData.length || historicalData.length} Periods)
+                                        </h3>
+                                        
+                                        {/* Chart Type Selector */}
+                                        <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+                                            <button
+                                                onClick={() => setChartType('line')}
+                                                className={`px-3 py-1 rounded text-xs transition-all ${
+                                                    chartType === 'line' 
+                                                        ? 'bg-blue-500 text-white' 
+                                                        : 'text-gray-400 hover:text-white'
+                                                }`}
+                                                title="Line Chart"
+                                            >
+                                                Line
+                                            </button>
+                                            <button
+                                                onClick={() => setChartType('bar')}
+                                                className={`px-3 py-1 rounded text-xs transition-all ${
+                                                    chartType === 'bar' 
+                                                        ? 'bg-blue-500 text-white' 
+                                                        : 'text-gray-400 hover:text-white'
+                                                }`}
+                                                title="Bar Chart"
+                                            >
+                                                Bar
+                                            </button>
+                                            <button
+                                                onClick={() => setChartType('combo')}
+                                                className={`px-3 py-1 rounded text-xs transition-all ${
+                                                    chartType === 'combo' 
+                                                        ? 'bg-blue-500 text-white' 
+                                                        : 'text-gray-400 hover:text-white'
+                                                }`}
+                                                title="Combo Chart"
+                                            >
+                                                Combo
+                                            </button>
+                                            <button
+                                                onClick={() => setChartType('sparkline')}
+                                                className={`px-3 py-1 rounded text-xs transition-all ${
+                                                    chartType === 'sparkline' 
+                                                        ? 'bg-blue-500 text-white' 
+                                                        : 'text-gray-400 hover:text-white'
+                                                }`}
+                                                title="Sparkline"
+                                            >
+                                                Spark
+                                            </button>
+                                        </div>
                                     </div>
+                                    
+                                    {renderChart()}
                                 </div>
 
                                 {/* Driver Comparison Chart */}
@@ -1191,6 +1673,72 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                 )}
 
             </div>
+            
+            {/* DatePicker Styles */}
+            <style jsx global>{`
+                .react-datepicker-popper {
+                    z-index: 9999 !important;
+                }
+
+                .react-datepicker {
+                    background-color: #1e293b !important;
+                    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                    border-radius: 0.75rem !important;
+                }
+
+                .react-datepicker__header {
+                    background-color: #334155 !important;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+                    border-radius: 0.75rem 0.75rem 0 0 !important;
+                    padding-top: 0.5rem !important;
+                }
+
+                .react-datepicker__current-month,
+                .react-datepicker__day-name {
+                    color: #ffffff !important;
+                }
+
+                .react-datepicker__day {
+                    color: #cbd5e1 !important;
+                }
+
+                .react-datepicker__day:hover {
+                    background-color: #3b82f6 !important;
+                    color: #ffffff !important;
+                    border-radius: 0.5rem !important;
+                }
+
+                .react-datepicker__day--selected,
+                .react-datepicker__day--keyboard-selected {
+                    background-color: #3b82f6 !important;
+                    color: #ffffff !important;
+                    border-radius: 0.5rem !important;
+                }
+
+                .react-datepicker__day--in-range,
+                .react-datepicker__day--in-selecting-range {
+                    background-color: rgba(59, 130, 246, 0.3) !important;
+                    color: #ffffff !important;
+                }
+
+                .react-datepicker__day--disabled {
+                    color: #475569 !important;
+                    cursor: not-allowed !important;
+                }
+
+                .react-datepicker__navigation-icon::before {
+                    border-color: #cbd5e1 !important;
+                }
+
+                .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
+                    border-color: #ffffff !important;
+                }
+
+                .react-datepicker__close-icon::after {
+                    background-color: #ef4444 !important;
+                    color: #ffffff !important;
+                }
+            `}</style>
         </div>
     );
 };
