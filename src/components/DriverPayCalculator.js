@@ -1123,7 +1123,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                             </div>
 
                             {/* Top Earner Card */}
-                            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 hover:-translate-y-1">
+                            {/* <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 hover:-translate-y-1">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="p-3 bg-yellow-500/20 rounded-xl">
                                         <Award className="w-6 h-6 text-yellow-400" />
@@ -1133,7 +1133,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                 <h3 className="text-gray-400 text-sm font-medium mb-1">Top Earner</h3>
                                 <p className="text-xl font-bold text-white truncate">{stats.topEarner}</p>
                                 <p className="text-sm text-blue-400 mt-1">${stats.topEarnerPay.toFixed(2)}</p>
-                            </div>
+                            </div> */}
                         </div>
 
                         {/* Charts Section */}
@@ -1200,7 +1200,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                 </div>
 
                                 {/* Driver Comparison Chart */}
-                                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
+                                {/* <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-2xl">
                                     <h3 className="text-xl font-bold text-white mb-6 flex items-center">
                                         <BarChart3 className="w-5 h-5 mr-2 text-purple-400" />
                                         Top 5 Drivers (Current Period)
@@ -1236,7 +1236,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                </div> */}
                             </div>
                         )}
                     </div>
