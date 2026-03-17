@@ -1,6 +1,6 @@
 // src/components/DriverPayCalculator.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp, Save, XCircle, BarChart3, Award, Activity, TrendingDown, Minus } from 'lucide-react';
+import { Calculator, Users, DollarSign, Calendar, Clock, FileText, Download, Settings, RefreshCw, TrendingUp, Save, XCircle, BarChart3, Activity, TrendingDown, Minus } from 'lucide-react';
 import BBA_LOGO from '../img/as.png';
 
 // Import Firebase
