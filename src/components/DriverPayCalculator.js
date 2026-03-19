@@ -59,7 +59,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
     // Dashboard data
     const [historicalData, setHistoricalData] = useState([]);
     const [showDashboard, setShowDashboard] = useState(false);
-    const [chartType, setChartType] = useState('line'); // 'line', 'bar', 'combo', 'sparkline'
+    const [chartType, setChartType] = useState('bar'); // 'line', 'bar', 'combo', 'sparkline'
     const [dashboardStartDate, setDashboardStartDate] = useState(null);
     const [dashboardEndDate, setDashboardEndDate] = useState(null);
     const [filteredHistoricalData, setFilteredHistoricalData] = useState([]);
@@ -121,7 +121,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                 };
             });
             setArchivedWeeks(weeks);
-            setHistoricalData(weeks.slice(0, 6)); // Last 6 weeks for charts
+            setHistoricalData(weeks.slice(0, 18)); // Last 18 weeks for charts
             if (weeks.length > 0 && !selectedArchiveId) {
                 setSelectedArchiveId(weeks[0].id);
             }
@@ -1149,7 +1149,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                         
                                         {/* Chart Type Selector */}
                                         <div className="flex gap-1 bg-white/5 rounded-lg p-1">
-                                            <button
+                                            {/* <button
                                                 onClick={() => setChartType('line')}
                                                 className={`px-3 py-1 rounded text-xs transition-all ${
                                                     chartType === 'line' 
@@ -1159,7 +1159,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                                 title="Line Chart"
                                             >
                                                 Line
-                                            </button>
+                                            </button> */}
                                             <button
                                                 onClick={() => setChartType('bar')}
                                                 className={`px-3 py-1 rounded text-xs transition-all ${
@@ -1182,7 +1182,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                             >
                                                 Combo
                                             </button>
-                                            <button
+                                            {/* <button
                                                 onClick={() => setChartType('sparkline')}
                                                 className={`px-3 py-1 rounded text-xs transition-all ${
                                                     chartType === 'sparkline' 
@@ -1192,7 +1192,7 @@ const DriverPayCalculator = ({ viewingUserId }) => {
                                                 title="Sparkline"
                                             >
                                                 Spark
-                                            </button>
+                                            </button> */}
                                         </div>
                                     </div>
                                     
